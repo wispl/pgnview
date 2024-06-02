@@ -7,15 +7,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-static const char* token_messages[TK_MAX] = {
-	[TK_LBRACKET] = "'['",
-	[TK_RBRACKET] = "']'",
-	[TK_LPAREN]   = "'('",
-	[TK_RPAREN]   = "')'",
-	[TK_LANGLE]   = "'<'",
-	[TK_RANGLE]   = "'>'",
-	[TK_PERIOD]   =	"'.'",
-	[TK_ASTERISK] = "'*'",
+static const char* token_str[TK_MAX] = {
+	[TK_LBRACKET] = "[",
+	[TK_RBRACKET] = "]",
+	[TK_LPAREN]   = "(",
+	[TK_RPAREN]   = ")",
+	[TK_LANGLE]   = "<",
+	[TK_RANGLE]   = ">",
+	[TK_PERIOD]   =	".",
+	[TK_ASTERISK] = "*",
 	[TK_STRING]   = "string",
 	[TK_SYMBOL]   = "symbol",
 	[TK_INTEGER]  = "integer",
@@ -46,10 +46,10 @@ static bool parser_expect(struct parser *parser, enum token_type type)
 		parser_next(parser);
 		return true;
 	}
-	fprintf(stderr, "[Syntax Error] expected '%s' found '%s' of token '%s'\n",
-	 	token_messages[type],
-	 	parser->lexer.curr_token.value,
-	 	token_messages[parser->lexer.curr_token.type]);
+	fprintf(stderr, "[Syntax Error] expected token '%s' found token '%s' with value '%s'\n",
+	 	token_str[type],
+	 	token_str[parser->lexer.curr_token.type],
+	 	parser->lexer.curr_token.value);
 
 	return false;
 }
