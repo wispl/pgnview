@@ -48,6 +48,7 @@ static bool parser_expect(struct parser *parser, enum token_type type)
 		parser_next(parser);
 		return true;
 	}
+	parser->unhandled_error = true;
 	fprintf(stderr, "[Syntax Error] expected token '%s' found token '%s' with value '%s'\n",
 	 	token_str[type],
 	 	token_str[parser->lexer.curr_token.type],
@@ -69,7 +70,12 @@ static void parser_tag(struct parser *parser)
 
 	parser_expect(parser, TK_RBRACKET);
 
-	list_add(&parser->pgn->tags, &tag->node);
+	if (parser->unhandled_error) {
+		fprintf(stderr, "[Parser Error] Unable to parse 'tag' due to errors\n");
+		parser->unhandled_error = false;
+	} else {
+		list_add(&parser->pgn->tags, &tag->node);
+	}
 }
 
 static void parser_move(struct parser *parser)
@@ -90,13 +96,19 @@ static void parser_move(struct parser *parser)
 	copy_token_value(&move->black, &parser->lexer.curr_token);
 	parser_expect(parser, TK_SYMBOL);
 
-	list_add(&parser->pgn->moves, &move->node);
+	if (parser->unhandled_error) {
+		fprintf(stderr, "[Parser Error] Unable to parse 'move' due to errors\n");
+		parser->unhandled_error = false;
+	} else {
+		list_add(&parser->pgn->moves, &move->node);
+	}
 }
 
 struct pgn* pgn_read(char* filename)
 {
 	// initialization
 	struct parser *parser = malloc(sizeof(struct parser));
+	parser->unhandled_error = false;
 	parser->pgn = malloc(sizeof(struct pgn));
 	lexer_fopen(&parser->lexer, filename);
 	list_init(&parser->pgn->tags);

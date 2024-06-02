@@ -24,6 +24,7 @@ struct pgn {
 };
 
 struct parser {
+	bool unhandled_error;
 	struct pgn *pgn;
 	struct lexer lexer;
 };
