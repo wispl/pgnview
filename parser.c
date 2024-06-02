@@ -24,6 +24,7 @@ static const char* token_str[TK_MAX] = {
 	[TK_EOF]      = "eof"
 };
 
+// copies the value of token to a buffer, the buffer must be freed
 static inline void copy_token_value(char **buffer, struct token *token)
 {
 	*buffer = malloc(token->len);
@@ -42,6 +43,7 @@ static inline bool parser_check(struct parser *parser, enum token_type type)
 
 static bool parser_expect(struct parser *parser, enum token_type type)
 {
+	// lexer will be one token ahead of parser after calling this
 	if (parser_check(parser, type)) {
 		parser_next(parser);
 		return true;
@@ -76,6 +78,7 @@ static void parser_move(struct parser *parser)
 
 	if (parser_check(parser, TK_INTEGER)) {
 		parser_expect(parser, TK_INTEGER);
+		// weird, but unlimited periods is permitted by the standard
 		do {
 			parser_expect(parser, TK_PERIOD);
 		} while (parser_check(parser, TK_PERIOD));
