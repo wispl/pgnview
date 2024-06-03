@@ -2,11 +2,11 @@
 
 #include "list.h"
 
+#include <ctype.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
-#include <ctype.h>
 
 // pgn standard:
 // https://ia802908.us.archive.org/26/items/pgn-standard-1994-03-12/PGN_standard_1994-03-12.txt
@@ -52,6 +52,7 @@ struct token {
 	int len;                // length of value, including the null terminator
 };
 
+// internal structure for sharing data between parsing functions
 struct parser {
 	// lexer
 	FILE *file;          // file being lexed and parsed
@@ -269,11 +270,12 @@ void pgn_read(struct pgn* pgn, char* filename)
 	// initialization
 	struct parser parser = {
 		.file  = fopen(filename, "r"),
-		.pgn = pgn,
-		.last_char = ' '
+		.last_char = ' ',
+		.pgn = pgn
 	};
 	list_init(&pgn->tags);
 	list_init(&pgn->moves);
+
 	if (parser.file == NULL) {
 		return;
 	}
@@ -295,17 +297,21 @@ void pgn_read(struct pgn* pgn, char* filename)
 
 void pgn_free(struct pgn *pgn)
 {
-	struct tag *tag;
-	list_for_each_entry(tag, &pgn->tags, node) {
+	if (pgn == NULL) {
+		return;
+	}
+
+	// free allocated strings and nodes for tags and moves
+	struct tag *tag, *tmp_tag;
+	list_for_each_entry_safe(tag, tmp_tag, &pgn->tags, node) {
 		free(tag->name);
 		free(tag->desc);
+		free(tag);
 	}
-
-	struct move *move;
-	list_for_each_entry(move, &pgn->moves, node) {
+	struct move *move, *tmp_move;
+	list_for_each_entry_safe(move, tmp_move, &pgn->moves, node) {
 		free(move->white);
 		free(move->black);
+		free(move);
 	}
-
-	free(pgn);
 }
