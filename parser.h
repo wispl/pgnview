@@ -5,7 +5,7 @@
 
 struct tag {
 	struct node node;
-	char *type, *description;
+	char *name, *desc;
 };
 
 struct move {

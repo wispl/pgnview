@@ -47,14 +47,14 @@ static const char* token_str[TK_MAX] = {
 };
 
 struct token {
-	enum token_type type;
+	enum token_type type;   // type of the token
 	char value[256]; 	// symbols and strings have max length of 255
-	int len;
+	int len;                // length of value, including the null terminator
 };
 
 struct parser {
 	// lexer
-	FILE *file;          // file being parsed
+	FILE *file;          // file being lexed and parsed
 	struct token token;  // current token
 	char last_char;
 
@@ -62,8 +62,12 @@ struct parser {
 	bool unhandled_error;
 
 	// data
-	struct pgn *pgn;
+	struct pgn *pgn;    // pgn data to fill during parsing
 };
+
+//
+// Lexer
+//
 
 static inline bool is_symbol(char c)
 {
@@ -83,17 +87,6 @@ static char cntrlchr(char c)
 	}
 	return '?';
 }
-
-// copies the value of token to a buffer, the buffer must be freed
-static inline void copy_token_value(char **buffer, struct token *token)
-{
-	*buffer = malloc(token->len);
-	memcpy(*buffer, token->value, token->len);
-}
-
-//
-// Lexer
-//
 
 // TODO: small buffer of parsed characters for error messages
 // TODO: nag tokens
@@ -172,13 +165,14 @@ void next_token(struct parser *parser)
 		return;
 	}
 
-	// all other tokens
+	// unknown tokens
 	parser->token.type = TK_UNKNOWN;
 	if (isprint(parser->last_char)) {
 		parser->token.value[0] = parser->last_char;
 		parser->token.value[1] = '\0';
 		parser->token.len = 2;
 	} else {
+		// store control sequences literally
 		parser->token.value[0] = '\\';
 		parser->token.value[1] = cntrlchr(parser->last_char);
 		parser->token.value[2] = '\0';
@@ -212,6 +206,13 @@ static bool expect(struct parser *parser, enum token_type type)
 	return false;
 }
 
+// copies the value of token to a buffer, the buffer must be freed
+static inline void copy_token_value(char **buffer, struct token *token)
+{
+	*buffer = malloc(token->len);
+	memcpy(*buffer, token->value, token->len);
+}
+
 // tag is made of the following tokens: "[ SYMBOL STRING ]"
 static void tag(struct parser *parser)
 {
@@ -219,9 +220,10 @@ static void tag(struct parser *parser)
 
 	expect(parser, TK_LBRACKET);
 
-	copy_token_value(&tag->type, &parser->token);
+	copy_token_value(&tag->name, &parser->token);
 	expect(parser, TK_SYMBOL);
-	copy_token_value(&tag->description, &parser->token);
+
+	copy_token_value(&tag->desc, &parser->token);
 	expect(parser, TK_STRING);
 
 	expect(parser, TK_RBRACKET);
@@ -295,8 +297,8 @@ void pgn_free(struct pgn *pgn)
 {
 	struct tag *tag;
 	list_for_each_entry(tag, &pgn->tags, node) {
-		free(tag->type);
-		free(tag->description);
+		free(tag->name);
+		free(tag->desc);
 	}
 
 	struct move *move;
