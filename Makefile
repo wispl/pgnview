@@ -5,7 +5,6 @@ OBJECTS = main.o parser.o lexer.o
 pgncat: $(OBJECTS)
 	$(CC) -o pgncat $(OBJECTS)
 main.o: parser.h list.h
-parser.o: parser.h list.h lexer.h
-lexer.o: lexer.h
+parser.o: parser.h list.h
 clean:
 	rm -f pgncat $(OBJECTS)
