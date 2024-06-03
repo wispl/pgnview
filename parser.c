@@ -148,7 +148,7 @@ void next_token(struct parser *parser)
 			++len;
 		}
 		parser->token.value[len] = '\0';
-		parser->token.len = len;
+		parser->token.len = len + 1;
 
 		// skip closing quotes
 		parser->last_char = getc(parser->file);
@@ -168,7 +168,7 @@ void next_token(struct parser *parser)
 
 		parser->token.type = all_ints ? TK_INTEGER : TK_SYMBOL;
 		parser->token.value[len] = '\0';
-		parser->token.len = len;
+		parser->token.len = len + 1;
 		return;
 	}
 
