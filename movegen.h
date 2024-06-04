@@ -42,8 +42,8 @@ enum piece {
 };
 
 struct board {
-enum lineattacks {
-	DIAGONAL,	
+	// index squarse for pieces
+	enum piece squares[64];
 	// piece bitborads
 	u64 pieces[PIECE_MAX];
 	// color bitboards

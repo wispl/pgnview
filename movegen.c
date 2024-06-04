@@ -214,10 +214,17 @@ void board_init(struct board *board)
 			      | square_bb(b8) | square_bb(g8);
 	board->pieces[PAWN]   = rank_2 | rank_7;
 	board->pieces[ALL]    = rank_1 |rank_2 | rank_7 | rank_8;
-
-	board->occupied[WHITE]       = rank_1 | rank_2;
-	board->occupied[BLACK]       = rank_7 | rank_8;
-	board->occupied[BOTH]        = board->occupied[WHITE] | board->occupied[BLACK];
+	int squares[64] = {
+		ROOK,  KNIGHT,BISHOP,QUEEN, KING,  BISHOP,KNIGHT,ROOK,
+		PAWN,  PAWN,  PAWN,  PAWN,  PAWN,  PAWN,  PAWN,  PAWN,
+		EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY,
+		EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY,
+		EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY,
+		EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY,
+		PAWN,  PAWN,  PAWN,  PAWN,  PAWN,  PAWN,  PAWN,  PAWN,
+		ROOK,  KNIGHT,BISHOP,QUEEN, KING,  BISHOP,KNIGHT,ROOK
+	};
+	memcpy(board->squares, squares, 64 * sizeof(enum piece));
 }
 
 void movelist_clear(struct movelist *list)
