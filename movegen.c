@@ -31,12 +31,10 @@ static void add_move(struct movelist *list, enum movetype type, int from, int to
 
 static u64 knight_attacks_bb(int square)
 {
-	u64 bitboard = 0ULL;
-	set_bit(bitboard, square);
-
+	u64 target = square_bb(square);
 	u64 west, east, attacks;
-	east     = east(bitboard);
-	west     = west(bitboard);
+	east     = east(target);
+	west     = west(target);
 	attacks  = (east|west) << 16;
 	attacks |= (east|west) >> 16;
 	east     = east(east);
@@ -48,12 +46,10 @@ static u64 knight_attacks_bb(int square)
 
 static u64 king_attacks_bb(int square)
 {
-	u64 bitboard = 0ULL;
-	set_bit(bitboard, square);
-
-	u64 attacks = east(bitboard) | west(bitboard);
-	bitboard    |= attacks;
-	attacks     |= north(bitboard) | south(bitboard);
+	u64 target = square_bb(square);
+	u64 attacks = east(target) | west(target);
+	target     |= attacks;
+	attacks    |= north(target) | south(target);
 	return attacks;
 }
 
