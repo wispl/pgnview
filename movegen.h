@@ -42,7 +42,7 @@ enum piece {
 };
 
 struct board {
-	// index squarse for pieces
+	// index square for piece type
 	enum piece squares[64];
 	// piece bitborads
 	u64 pieces[PIECE_MAX];
