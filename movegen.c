@@ -5,15 +5,17 @@
 #include <stdlib.h>
 
 // pre-initialized lineattacks table, used for bishops, rooks, and queens
+// indexed by lineattacks[diagonal|antidiagonal|horizontal|vertcal][square]
+// and gives the respective bitboard for each lineattack for the square
 static u64 lineattacks[4][64];
 
 static void init_lineattacks_table()
 {
 	for (int i = 0; i < 64; ++i) {
-		lineattacks[DIAGONAL][i] = diagonal(i);
+		lineattacks[DIAGONAL][i]     = diagonal(i);
 		lineattacks[ANTIDIAGONAL][i] = antidiagonal(i);
-		lineattacks[HORIZONTAL][i] = rank(i);
-		lineattacks[VERTICAL][i] = file(i);
+		lineattacks[HORIZONTAL][i]   = rank(i);
+		lineattacks[VERTICAL][i]     = file(i);
 	}
 }
 

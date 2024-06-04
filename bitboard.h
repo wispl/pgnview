@@ -34,6 +34,7 @@ u64 antidiagonal(int square);
 #define get_bit(bitboard, square) (bitboard & (1ULL << square))
 #define set_bit(bitboard, square) (bitboard |= (1ULL << square))
 #define pop_bit(bitboard, square) (bitboard &= ~(1ULL << square))
+// least significant and most significant bit
 int lsb(u64 bb);
 int msb(u64 bb);
 int pop_lsb(u64 bb);
@@ -61,6 +62,7 @@ u64 shift(u64 bb, enum direction dir);
 #define north_west(b) ((b << 7) & ~file_h)
 #define south_west(b) ((b >> 9) & ~file_h)
 
+// pretty print bitboard
 void print_bitboard(u64 bitboard);
 
 #endif
