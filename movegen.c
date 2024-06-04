@@ -181,12 +181,12 @@ static void generate_pawn_moves(struct board *board, struct movelist *list,
 void generate_moves(struct board *board, struct movelist *list, enum piece piece,
 		    enum color color, enum movetype type)
 {
-	assert(type != PROMOTION && piece != PAWN);
 	if (piece == PAWN) {
 		generate_pawn_moves(board, list, color, type);
 		return;
 	}
 
+	assert(type != PROMOTION);
 	u64 pieces  =  board->pieces[color][piece];
 	u64 empty   = ~board->occupied[BOTH];
 	u64 enemies =  board->occupied[(color == WHITE) ? BLACK : WHITE];
