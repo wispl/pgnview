@@ -1,127 +1,21 @@
-#include "board.h"
+#include "movegen.h"
 
-#include <assert.h>
-#include <stdbool.h>
+#include "bitboard.h"
+
 #include <stdlib.h>
-#include <stdio.h>
 
 // pre-initialized lineattacks table, used for bishops, rooks, and queens
 static u64 lineattacks[4][64];
 
-static u64 diagonal_mask(int square) {
-   const u64 main_diagonal = 0x8040201008040201;
-   int diag = 8 * (square & 7) - (square & 56);
-   int north = -diag & ( diag >> 31);
-   int south =  diag & (-diag >> 31);
-   return (main_diagonal >> south) << north;
-}
-
-static u64 antidiagonal_mask(int square) {
-   const u64 main_diagonal = 0x0102040810204080;
-   int diag = 56- 8 * (square & 7) - (square & 56);
-   int north = -diag & ( diag >> 31);
-   int south =  diag & (-diag >> 31);
-   return (main_diagonal >> south) << north;
-}
-
-static u64 rank_mask(int square)
-{
-	return  0xFFULL << (square & 56);
-}
-
-static u64 file_mask(int square)
-{
-	return 0x0101010101010101ULL << (square & 7);
-}
-
-
-static void init_lineattacks_table() 
+static void init_lineattacks_table()
 {
 	for (int i = 0; i < 64; ++i) {
-		lineattacks[DIAGONAL][i] = diagonal_mask(i);
-		lineattacks[ANTIDIAGONAL][i] = antidiagonal_mask(i);
-		lineattacks[HORIZONTAL][i] = rank_mask(i);
-		lineattacks[VERTICAL][i] = file_mask(i);
+		lineattacks[DIAGONAL][i] = diagonal(i);
+		lineattacks[ANTIDIAGONAL][i] = antidiagonal(i);
+		lineattacks[HORIZONTAL][i] = rank(i);
+		lineattacks[VERTICAL][i] = file(i);
 	}
 }
-
-//
-// Bits
-//
-
-// For bitscanning
-static const int index64[64] = {
-    0, 47,  1, 56, 48, 27,  2, 60,
-   57, 49, 41, 37, 28, 16,  3, 61,
-   54, 58, 35, 52, 50, 42, 21, 44,
-   38, 32, 29, 23, 17, 11,  4, 62,
-   46, 55, 26, 59, 40, 36, 15, 53,
-   34, 51, 20, 43, 31, 22, 10, 45,
-   25, 39, 14, 33, 19, 30,  9, 24,
-   13, 18,  8, 12,  7,  6,  5, 63
-};
-
-static int bit_scan(u64 bb)
-{
-	const u64 debruijn64 = 0x03f79d71b4cb0a89ULL;
-	assert (bb != 0);
-	return index64[((bb ^ (bb-1)) * debruijn64) >> 58];
-}
-
-static int bit_scan_rev(u64 bb)
-{
-	const u64 debruijn64 = 0x03f79d71b4cb0a89ULL;
-	assert (bb != 0);
-	bb |= bb >> 1;
-	bb |= bb >> 2;
-	bb |= bb >> 4;
-	bb |= bb >> 8;
-	bb |= bb >> 16;
-	bb |= bb >> 32;
-	return index64[(bb * debruijn64) >> 58];
-}
-
-static int pop_lsb(u64 bb)
-{
-	int lsb = bit_scan(bb);
-	bb &= bb - 1;
-	return lsb;
-}
-
-static void print_bitboard(u64 bitboard)
-{
-	printf("bitboard: %lld\n", bitboard);
-	for (int rank = 7; rank >= 0; --rank) {
-		for (int file = 0; file < 8; ++file) {
-			int square = rank * 8 + file;
-			if (!file) {
-				printf("%d ", rank + 1);
-			}
-			printf(" %c", get_bit(bitboard, square) ? '1' : '.');
-		}
-		printf("\n");
-	}
-	printf("\n   a b c d e f g h\n");
-}
-
-static u64 shift(u64 bb, enum direction dir)
-{
-	switch(dir) {
-	case NORTH:      return north(bb);
-	case SOUTH:      return south(bb);
-	case EAST:       return east(bb);
-	case NORTH_EAST: return north_east(bb);
-	case SOUTH_EAST: return south_east(bb);
-	case WEST:       return west(bb);
-	case NORTH_WEST: return north_west(bb);
-	case SOUTH_WEST: return south_west(bb);
-	}
-	return 0ULL;
-}
-
-//
-// movelist
-//
 
 static struct move* make_move(enum movetype type, int from, int to)
 {
@@ -136,10 +30,6 @@ static inline void add_move(struct node *list, struct move* move)
 {
 	list_add(list, &move->node);
 }
-
-//
-// movegen
-//
 
 static void generate_pawn_moves(struct board *board, struct node *list,
 				enum color color, enum movetype type)
@@ -241,14 +131,14 @@ static u64 king_attacks_bb(int square)
 u64 pos_ray_attacks(int square, u64 occupied, enum lineattacks type)
 {
 	u64 attacks = pos_ray(lineattacks[type][square], square);
-	u64 blocker = bit_scan((attacks & occupied) | 0x8000000000000000ULL);
+	u64 blocker = lsb((attacks & occupied) | 0x8000000000000000ULL);
 	return attacks ^ pos_ray(lineattacks[type][blocker], blocker);
 }
 
 u64 neg_ray_attacks(int square, u64 occupied, enum lineattacks type)
 {
 	u64 attacks = neg_ray(lineattacks[type][square], square);
-	u64 blocker = bit_scan_rev((attacks & occupied) | 1);
+	u64 blocker = msb((attacks & occupied) | 1);
 	return attacks ^ neg_ray(lineattacks[type][blocker], blocker);
 }
 
@@ -287,7 +177,6 @@ static u64 attacks_bb(int square, u64 occupied, enum piece piece)
 	}
 	return 0ULL;
 }
-
 
 static void generate_moves(struct board *board, struct node *list,
 			   enum piece piece, enum color color,
