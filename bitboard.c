@@ -35,10 +35,10 @@ int msb(u64 bb)
 	return index64[(bb * debruijn64) >> 58];
 }
 
-int pop_lsb(u64 bb)
+int pop_lsb(u64 *bb)
 {
-	int i = lsb(bb);
-	bb &= bb - 1;
+	int i = lsb(*bb);
+	*bb &= *bb - 1;
 	return i;
 }
 

@@ -40,7 +40,7 @@ u64 antidiagonal(int square);
 // least significant and most significant bit
 int lsb(u64 bb);
 int msb(u64 bb);
-int pop_lsb(u64 bb);
+int pop_lsb(u64 *bb);
 
 enum direction {
     NORTH = 8,
