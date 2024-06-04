@@ -59,4 +59,9 @@ struct move {
 	int to;
 };
 
+
+void init_lineattacks_table();
+void generate_moves(struct board *board, struct node *list,
+		    enum piece piece, enum color color,
+		    enum movetype type);
 #endif

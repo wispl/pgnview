@@ -2,6 +2,7 @@
 
 #include "bitboard.h"
 
+#include <assert.h>
 #include <stdlib.h>
 
 // pre-initialized lineattacks table, used for bishops, rooks, and queens
@@ -9,7 +10,7 @@
 // and gives the respective bitboard for each lineattack for the square
 static u64 lineattacks[4][64];
 
-static void init_lineattacks_table()
+void init_lineattacks_table()
 {
 	for (int i = 0; i < 64; ++i) {
 		lineattacks[DIAGONAL][i]     = diagonal(i);
@@ -33,6 +34,87 @@ static inline void add_move(struct node *list, struct move* move)
 	list_add(list, &move->node);
 }
 
+
+static u64 knight_attacks_bb(int square)
+{
+	u64 bitboard = 0ULL;
+	set_bit(bitboard, square);
+
+	u64 west, east, attacks;
+	east     = east(bitboard);
+	west     = west(bitboard);
+	attacks  = (east|west) << 16;
+	attacks |= (east|west) >> 16;
+	east     = east(east);
+	west     = west(west);
+	attacks |= (east|west) <<  8;
+	attacks |= (east|west) >>  8;
+	return attacks;
+}
+
+static u64 king_attacks_bb(int square)
+{
+	u64 bitboard = 0ULL;
+	set_bit(bitboard, square);
+
+	u64 attacks = east(bitboard) | west(bitboard);
+	bitboard    |= attacks;
+	attacks     |= north(bitboard) | south(bitboard);
+	return attacks;
+}
+
+// classical method to determine squares for queens, rooks, and bishops
+static u64 pos_ray_attacks(int square, u64 occupied, enum lineattacks type)
+{
+	u64 attacks = pos_ray(lineattacks[type][square], square);
+	u64 blocker = lsb((attacks & occupied) | 0x8000000000000000ULL);
+	return attacks ^ pos_ray(lineattacks[type][blocker], blocker);
+}
+
+static u64 neg_ray_attacks(int square, u64 occupied, enum lineattacks type)
+{
+	u64 attacks = neg_ray(lineattacks[type][square], square);
+	u64 blocker = msb((attacks & occupied) | 1);
+	return attacks ^ neg_ray(lineattacks[type][blocker], blocker);
+}
+
+static u64 bishop_attacks_bb(int square, u64 occupied)
+{
+	return pos_ray_attacks(square, occupied, DIAGONAL)
+	     | neg_ray_attacks(square, occupied, DIAGONAL)
+	     | pos_ray_attacks(square, occupied, ANTIDIAGONAL)
+	     | neg_ray_attacks(square, occupied, ANTIDIAGONAL);
+}
+
+static u64 rook_attacks_bb(int square, u64 occupied)
+{
+	return pos_ray_attacks(square, occupied, HORIZONTAL)
+	     | neg_ray_attacks(square, occupied, HORIZONTAL)
+	     | pos_ray_attacks(square, occupied, VERTICAL)
+	     | neg_ray_attacks(square, occupied, VERTICAL);
+}
+
+static u64 queen_attacks_bb(int square, u64 occupied)
+{
+	return bishop_attacks_bb(square, occupied)
+	     | rook_attacks_bb(square, occupied);
+}
+
+static u64 attacks_bb(int square, u64 occupied, enum piece piece)
+{
+	assert(piece != PAWN);
+	switch (piece) {
+	case KNIGHT: return knight_attacks_bb(square);
+	case KING:   return king_attacks_bb(square);
+	case BISHOP: return bishop_attacks_bb(square, occupied);
+	case ROOK:   return rook_attacks_bb(square, occupied);
+	case QUEEN:  return queen_attacks_bb(square, occupied);
+	case PAWN:   return 0ULL;
+	}
+	return 0ULL;
+}
+
+// TODO: handle en passant
 static void generate_pawn_moves(struct board *board, struct node *list,
 				enum color color, enum movetype type)
 {
@@ -102,96 +184,29 @@ static void generate_pawn_moves(struct board *board, struct node *list,
 	}
 }
 
-static u64 knight_attacks_bb(int square)
+void generate_moves(struct board *board, struct node *list, enum piece piece,
+		    enum color color, enum movetype type)
 {
-	u64 bitboard = 0ULL;
-	set_bit(bitboard, square);
-
-	u64 west, east, attacks;
-	east     = east(bitboard);
-	west     = west(bitboard);
-	attacks  = (east|west) << 16;
-	attacks |= (east|west) >> 16;
-	east     = east(east);
-	west     = west(west);
-	attacks |= (east|west) <<  8;
-	attacks |= (east|west) >>  8;
-	return attacks;
-}
-
-static u64 king_attacks_bb(int square)
-{
-	u64 bitboard = 0ULL;
-	set_bit(bitboard, square);
-
-	u64 attacks = east(bitboard) | west(bitboard);
-	bitboard    |= attacks;
-	attacks     |= north(bitboard) | south(bitboard);
-	return attacks;
-}
-
-u64 pos_ray_attacks(int square, u64 occupied, enum lineattacks type)
-{
-	u64 attacks = pos_ray(lineattacks[type][square], square);
-	u64 blocker = lsb((attacks & occupied) | 0x8000000000000000ULL);
-	return attacks ^ pos_ray(lineattacks[type][blocker], blocker);
-}
-
-u64 neg_ray_attacks(int square, u64 occupied, enum lineattacks type)
-{
-	u64 attacks = neg_ray(lineattacks[type][square], square);
-	u64 blocker = msb((attacks & occupied) | 1);
-	return attacks ^ neg_ray(lineattacks[type][blocker], blocker);
-}
-
-static u64 bishop_attacks_bb(int square, u64 occupied)
-{
-	return pos_ray_attacks(square, occupied, DIAGONAL)
-	     | neg_ray_attacks(square, occupied, DIAGONAL)
-	     | pos_ray_attacks(square, occupied, ANTIDIAGONAL)
-	     | neg_ray_attacks(square, occupied, ANTIDIAGONAL);
-}
-
-
-static u64 rook_attacks_bb(int square, u64 occupied)
-{
-	return pos_ray_attacks(square, occupied, HORIZONTAL)
-	     | neg_ray_attacks(square, occupied, HORIZONTAL)
-	     | pos_ray_attacks(square, occupied, VERTICAL)
-	     | neg_ray_attacks(square, occupied, VERTICAL);
-}
-
-static u64 queen_attacks_bb(int square, u64 occupied)
-{
-	return bishop_attacks_bb(square, occupied)
-	     | rook_attacks_bb(square, occupied);
-}
-
-static u64 attacks_bb(int square, u64 occupied, enum piece piece)
-{
-	switch (piece) {
-	case KNIGHT: return knight_attacks_bb(square);
-	case KING:   return king_attacks_bb(square);
-	case BISHOP: return bishop_attacks_bb(square, occupied);
-	case ROOK:   return rook_attacks_bb(square, occupied);
-	case QUEEN:  return queen_attacks_bb(square, occupied);
-	case PAWN:   return 0ULL; // TODO: Add assert for piece != PAWN
+	assert(type != PROMOTION && piece != PAWN);
+	if (piece == PAWN) {
+		generate_pawn_moves(board, list, color, type);
+		return;
 	}
-	return 0ULL;
-}
 
-static void generate_moves(struct board *board, struct node *list,
-			   enum piece piece, enum color color,
-			   enum movetype type)
-{
-	u64 pieces = board->pieces[color][piece];
+	u64 pieces  =  board->pieces[color][piece];
+	u64 empty   = ~board->occupied[BOTH];
+	u64 enemies =  board->occupied[(color == WHITE) ? BLACK : WHITE];
 	while (pieces) {
 		int from = pop_lsb(pieces);
 		u64 bb   = attacks_bb(from, board->occupied[BOTH], piece);
+		if (type == CAPTURE) {
+			bb &= enemies;
+		} else if (type == QUIET) {
+			bb &= empty;
+		}
 
 		while (bb) {
 			add_move(list, make_move(type, from, pop_lsb(bb)));
 		}
 	}
 }
-
