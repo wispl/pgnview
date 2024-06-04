@@ -2,7 +2,6 @@
 #define MOVEGEN_H
 
 #include "bitboard.h"
-#include "list.h"
 
 // Little endian ranked-file ordered square mapping
 enum squares {
@@ -53,15 +52,19 @@ enum movetype {
 
 // move encoding
 struct move {
-	struct node node;
 	enum movetype type;
 	int from;
 	int to;
 };
 
+struct movelist {
+	struct move moves[256];
+	int len;
+};
 
 void init_lineattacks_table();
-void generate_moves(struct board *board, struct node *list,
-		    enum piece piece, enum color color,
-		    enum movetype type);
+void generate_moves(struct board *board, struct movelist *list, enum piece piece,
+		    enum color color, enum movetype type);
+void movelist_clear(struct movelist *list);
+
 #endif

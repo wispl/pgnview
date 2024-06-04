@@ -20,20 +20,14 @@ void init_lineattacks_table()
 	}
 }
 
-static struct move* make_move(enum movetype type, int from, int to)
+static void add_move(struct movelist *list, enum movetype type, int from, int to)
 {
-	struct move *move = malloc(sizeof(struct move));
-	move->type = type;
-	move->from = from;
-	move->to   = to;
-	return move;
+	int index = list->len;
+	list->moves[index].type = type;
+	list->moves[index].from = from;
+	list->moves[index].to   = to;
+	++list->len;
 }
-
-static inline void add_move(struct node *list, struct move* move)
-{
-	list_add(list, &move->node);
-}
-
 
 static u64 knight_attacks_bb(int square)
 {
@@ -115,7 +109,7 @@ static u64 attacks_bb(int square, u64 occupied, enum piece piece)
 }
 
 // TODO: handle en passant
-static void generate_pawn_moves(struct board *board, struct node *list,
+static void generate_pawn_moves(struct board *board, struct movelist *list,
 				enum color color, enum movetype type)
 {
 	u64 empty    = ~board->occupied[BOTH];
@@ -141,12 +135,12 @@ static void generate_pawn_moves(struct board *board, struct node *list,
 
 		while (b1) {
 			int to = pop_lsb(b1);
-			add_move(list, make_move(type, to - up, to));
+			add_move(list, type, to - up, to);
 		}
 
 		while (b2) {
 			int to = pop_lsb(b2);
-			add_move(list, make_move(type, to - up - up, to));
+			add_move(list, type, to - up - up, to);
 		}
 	} else if (type == PROMOTION) {
 		// pawns can promote by moving or capturing while on the 7th rank
@@ -156,17 +150,17 @@ static void generate_pawn_moves(struct board *board, struct node *list,
 
 		while (b1) {
 			int to = pop_lsb(b1);
-			add_move(list, make_move(type, to - up_right , to));
+			add_move(list, type, to - up_right , to);
 		}
 
 		while (b2) {
 			int to = pop_lsb(b2);
-			add_move(list, make_move(type, to - up_left, to));
+			add_move(list, type, to - up_left, to);
 		}
 
 		while (b3) {
 			int to = pop_lsb(b3);
-			add_move(list, make_move(type, to - up, to));
+			add_move(list, type, to - up, to);
 		}
 	} else if (type == CAPTURE) {
 		// regular captures
@@ -175,16 +169,16 @@ static void generate_pawn_moves(struct board *board, struct node *list,
 
 		while (b1) {
 			int to = pop_lsb(b1);
-			add_move(list, make_move(type, to - up_right , to));
+			add_move(list, type, to - up_right , to);
 		}
 		while (b2) {
 			int to = pop_lsb(b2);
-			add_move(list, make_move(type, to - up_left, to));
+			add_move(list, type, to - up_left, to);
 		}
 	}
 }
 
-void generate_moves(struct board *board, struct node *list, enum piece piece,
+void generate_moves(struct board *board, struct movelist *list, enum piece piece,
 		    enum color color, enum movetype type)
 {
 	assert(type != PROMOTION && piece != PAWN);
@@ -206,7 +200,12 @@ void generate_moves(struct board *board, struct node *list, enum piece piece,
 		}
 
 		while (bb) {
-			add_move(list, make_move(type, from, pop_lsb(bb)));
+			add_move(list, type, from, pop_lsb(bb));
 		}
 	}
+}
+
+void movelist_clear(struct movelist *list)
+{
+	list->len = 0;
 }

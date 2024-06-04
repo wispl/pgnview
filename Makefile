@@ -6,7 +6,7 @@ pgncat: $(OBJECTS)
 	$(CC) -o pgncat $(OBJECTS)
 main.o: parser.h list.h
 parser.o: parser.h list.h
-movegen.o: movegen.h list.h
+movegen.o: movegen.h
 bitboard.o: bitboard.h
 clean:
 	rm -f pgncat $(OBJECTS)
