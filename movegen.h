@@ -74,5 +74,6 @@ void generate_moves(struct board *board, struct movelist *list, enum piece piece
 void board_init(struct board *board);
 void board_move(struct board *board, enum color color, struct move *move);
 void movelist_clear(struct movelist *list);
+void print_squares(enum piece pieces[64]);
 
 #endif

@@ -3,6 +3,7 @@
 #include "bitboard.h"
 
 #include <assert.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -243,4 +244,30 @@ void board_move(struct board *board, enum color color, struct move *move)
 void movelist_clear(struct movelist *list)
 {
 	list->len = 0;
+}
+
+void print_squares(enum piece pieces[64])
+{
+	for (int rank = 7; rank >= 0; --rank) {
+		for (int file = 0; file < 8; ++file) {
+			int square = rank * 8 + file;
+			if (!file) {
+				printf("%d ", rank + 1);
+			}
+			char c;
+			switch (pieces[square]) {
+				case KING:   c = 'K'; break;
+				case QUEEN:  c = 'Q'; break;
+				case ROOK:   c = 'R'; break;
+				case BISHOP: c = 'B'; break;
+				case KNIGHT: c = 'N'; break;
+				case PAWN:   c = 'P'; break;
+				case EMPTY:  c = '.'; break;
+				default:     c = '?';
+			}
+			printf(" %c", c);
+		}
+		printf("\n");
+	}
+	printf("\n   a b c d e f g h\n");
 }
