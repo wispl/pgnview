@@ -4,6 +4,7 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 
 // pre-initialized lineattacks table, used for bishops, rooks, and queens
 // indexed by lineattacks[diagonal|antidiagonal|horizontal|vertcal][square]
@@ -20,10 +21,9 @@ void init_lineattacks_table()
 	}
 }
 
-static void add_move(struct movelist *list, enum movetype type, int from, int to)
+static void add_move(struct movelist *list, int from, int to)
 {
 	int index = list->len;
-	list->moves[index].type = type;
 	list->moves[index].from = from;
 	list->moves[index].to   = to;
 	++list->len;
@@ -92,14 +92,14 @@ static u64 queen_attacks_bb(int square, u64 occupied)
 
 static u64 attacks_bb(int square, u64 occupied, enum piece piece)
 {
-	assert(piece != PAWN);
+	assert(piece != PAWN && piece != ALL);
 	switch (piece) {
 	case KNIGHT: return knight_attacks_bb(square);
 	case KING:   return king_attacks_bb(square);
 	case BISHOP: return bishop_attacks_bb(square, occupied);
 	case ROOK:   return rook_attacks_bb(square, occupied);
 	case QUEEN:  return queen_attacks_bb(square, occupied);
-	case PAWN:   return 0ULL;
+	default:     return 0ULL;
 	}
 	return 0ULL;
 }
@@ -108,22 +108,21 @@ static u64 attacks_bb(int square, u64 occupied, enum piece piece)
 static void generate_pawn_moves(struct board *board, struct movelist *list,
 				enum color color, enum movetype type)
 {
-	u64 empty    = ~board->occupied[BOTH];
-	u64 enemies  =  board->occupied[(color == WHITE) ? BLACK : WHITE];
+	u64 empty   = ~board->pieces[ALL];
+	u64 enemies =  board->colors[flip_color(color)];
 
 	enum direction up    	= (color == WHITE) ? NORTH      : SOUTH;
 	enum direction up_right = (color == WHITE) ? NORTH_EAST : SOUTH_WEST;
 	enum direction up_left  = (color == WHITE) ? NORTH_WEST : SOUTH_EAST;
 
-	// pawns which can promote
-	u64 rank7 = (color == WHITE) ? rank_7 : rank_2;
-	u64 rank7_pawns = board->pieces[color][PAWN] & rank7;
-	// pawns which can't promote
-	u64 not_rank7_pawns = board->pieces[color][PAWN] & ~rank7;
+	// pawns on rank 7 can promote by moving or capturing onto rank 8
+	u64 rank7           = (color == WHITE) ? rank_7 : rank_2;
+	u64 rank7_pawns     = pawns(board, color) & rank7;
+	u64 not_rank7_pawns = pawns(board, color) & ~rank7;
 
 	// pawns which can move two squares
-	u64 rank2 = (color == WHITE) ? rank_2 : rank_7;
-	u64 rank2_pawns = board->pieces[color][PAWN] & rank2;
+	u64 rank2       = (color == WHITE) ? rank_2 : rank_7;
+	u64 rank2_pawns = pawns(board, color) & rank2;
 
 	if (type == QUIET) {
 		u64 b1 = shift(not_rank7_pawns, up) & empty;
@@ -131,32 +130,30 @@ static void generate_pawn_moves(struct board *board, struct movelist *list,
 		
 		while (b1) {
 			int to = pop_lsb(&b1);
-			add_move(list, type, to - up, to);
+			add_move(list, to - up, to);
 		}
-
 		while (b2) {
 			int to = pop_lsb(&b2);
-			add_move(list, type, to - up - up, to);
+			add_move(list, to - up - up, to);
 		}
 	} else if (type == PROMOTION) {
-		// pawns can promote by moving or capturing while on the 7th rank
 		u64 b1 = shift(rank7_pawns, up_right) & enemies;
 		u64 b2 = shift(rank7_pawns, up_left) & enemies;
 		u64 b3 = shift(rank7_pawns, up) & empty;
 
 		while (b1) {
 			int to = pop_lsb(&b1);
-			add_move(list, type, to - up_right , to);
+			add_move(list, to - up_right , to);
 		}
 
 		while (b2) {
 			int to = pop_lsb(&b2);
-			add_move(list, type, to - up_left, to);
+			add_move(list, to - up_left, to);
 		}
 
 		while (b3) {
 			int to = pop_lsb(&b3);
-			add_move(list, type, to - up, to);
+			add_move(list, to - up, to);
 		}
 	} else if (type == CAPTURE) {
 		// regular captures
@@ -165,11 +162,11 @@ static void generate_pawn_moves(struct board *board, struct movelist *list,
 
 		while (b1) {
 			int to = pop_lsb(&b1);
-			add_move(list, type, to - up_right , to);
+			add_move(list, to - up_right , to);
 		}
 		while (b2) {
 			int to = pop_lsb(&b2);
-			add_move(list, type, to - up_left, to);
+			add_move(list, to - up_left, to);
 		}
 	}
 }
@@ -183,12 +180,13 @@ void generate_moves(struct board *board, struct movelist *list, enum piece piece
 	}
 
 	assert(type != PROMOTION);
-	u64 pieces  =  board->pieces[color][piece];
-	u64 empty   = ~board->occupied[BOTH];
-	u64 enemies =  board->occupied[(color == WHITE) ? BLACK : WHITE];
+	u64 pieces   =  pieces(board, piece, color);
+	u64 occupied =  board->pieces[ALL];
+	u64 empty    = ~occupied;
+	u64 enemies  =  board->colors[flip_color(color)];
 	while (pieces) {
 		int from = pop_lsb(&pieces);
-		u64 bb   = attacks_bb(from, board->occupied[BOTH], piece);
+		u64 bb   = attacks_bb(from, occupied, piece);
 		if (type == CAPTURE) {
 			bb &= enemies;
 		} else if (type == QUIET) {
@@ -196,26 +194,26 @@ void generate_moves(struct board *board, struct movelist *list, enum piece piece
 		}
 
 		while (bb) {
-			add_move(list, type, from, pop_lsb(&bb));
+			add_move(list, from, pop_lsb(&bb));
 		}
 	}
 }
 
-void init_board(struct board *board)
+void board_init(struct board *board)
 {
-	board->pieces[WHITE][KING]   = square_bb(e1);
-	board->pieces[WHITE][QUEEN]  = square_bb(d1);
-	board->pieces[WHITE][ROOK]   = square_bb(a1) | square_bb(h1);
-	board->pieces[WHITE][BISHOP] = square_bb(c1) | square_bb(f1);
-	board->pieces[WHITE][KNIGHT] = square_bb(b1) | square_bb(g1);
-	board->pieces[WHITE][PAWN]   = rank_2;
+	board->colors[WHITE]  = rank_1 | rank_2;
+	board->colors[BLACK]  = rank_7 | rank_8;
 
-	board->pieces[BLACK][KING]   = square_bb(e8);
-	board->pieces[BLACK][QUEEN]  = square_bb(d8);
-	board->pieces[BLACK][ROOK]   = square_bb(a8) | square_bb(h8);
-	board->pieces[BLACK][BISHOP] = square_bb(c8) | square_bb(f8);
-	board->pieces[BLACK][KNIGHT] = square_bb(b8) | square_bb(g8);
-	board->pieces[BLACK][PAWN]   = rank_7;
+	board->pieces[KING]   = square_bb(e1) | square_bb(e8);
+	board->pieces[QUEEN]  = square_bb(d1) | square_bb(d8);
+	board->pieces[ROOK]   = square_bb(a1) | square_bb(h1)
+			      | square_bb(a8) | square_bb(h8);
+	board->pieces[BISHOP] = square_bb(c1) | square_bb(f1)
+	                      | square_bb(c8) | square_bb(f8);
+	board->pieces[KNIGHT] = square_bb(b1) | square_bb(g1)
+			      | square_bb(b8) | square_bb(g8);
+	board->pieces[PAWN]   = rank_2 | rank_7;
+	board->pieces[ALL]    = rank_1 |rank_2 | rank_7 | rank_8;
 
 	board->occupied[WHITE]       = rank_1 | rank_2;
 	board->occupied[BLACK]       = rank_7 | rank_8;

@@ -15,28 +15,6 @@ enum squares {
 	a8, b8, c8, d8, e8, f8, g8, h8
 };
 
-enum color {
-	WHITE,
-	BLACK,
-	BOTH
-};
-
-enum piece {
-	KING,
-	QUEEN,
-	ROOK,
-	BISHOP,
-	KNIGHT,
-	PAWN
-};;
-
-struct board {
-	// all pieces: pieces[white|black][king|queen|rook|bishop|knight|pawn]
-	u64 pieces[2][6];
-	// occupied squares: occupied[white|black|both]
-	u64 occupied[3];
-};
-
 enum lineattacks {
 	DIAGONAL,	
 	ANTIDIAGONAL,
@@ -44,15 +22,43 @@ enum lineattacks {
 	VERTICAL,
 };
 
+enum color {
+	WHITE,
+	BLACK,
+	COLOR_MAX,
+};
+#define flip_color(color) ((color) ^ BLACK)
+
+enum piece {
+	KING,
+	QUEEN,
+	ROOK,
+	BISHOP,
+	KNIGHT,
+	PAWN,
+	ALL,
+	PIECE_MAX,
+	EMPTY
+};
+
+struct board {
+enum lineattacks {
+	DIAGONAL,	
+	// piece bitborads
+	u64 pieces[PIECE_MAX];
+	// color bitboards
+	u64 colors[COLOR_MAX];
+};
+#define pieces(board, piece, color) ((board)->pieces[(piece)] & (board)->colors[(color)])
+#define pawns(board, color) (pieces((board), PAWN, (color)))
+
 enum movetype {
 	QUIET,		// movement only, no material is altered
 	PROMOTION,	// material is added for promoting side
 	CAPTURE,	// material is decreased for opposing side
 };
 
-// move encoding
 struct move {
-	enum movetype type;
 	int from;
 	int to;
 };
@@ -63,9 +69,9 @@ struct movelist {
 };
 
 void init_lineattacks_table();
-void init_board(struct board *board);
 void generate_moves(struct board *board, struct movelist *list, enum piece piece,
 		    enum color color, enum movetype type);
+void board_init(struct board *board);
 void movelist_clear(struct movelist *list);
 
 #endif
