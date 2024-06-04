@@ -18,7 +18,7 @@ int main(int argc, char **argv)
 		printf("%s: %s\n", tag->name, tag->desc);
 	}
 
-	struct move *move;
+	struct movetext *move;
 	list_for_each_entry(move, &pgn.moves, node) {
 		printf("%s %s\n", move->white, move->black);
 	}

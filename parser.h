@@ -8,7 +8,7 @@ struct tag {
 	char *name, *desc;
 };
 
-struct move {
+struct movetext {
 	struct node node;
 	char *white, *black;
 	char *black_comment, *white_comment;

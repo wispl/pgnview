@@ -239,9 +239,9 @@ static void tag(struct parser *parser)
 
 // TODO: handle comments and NAG tokens
 // move is made of the following tokens: "(INTEGER PERIOD+)? SYMBOL SYMBOL"
-static void move(struct parser *parser)
+static void movetext(struct parser *parser)
 {
-	struct move *move = malloc(sizeof(struct move));
+	struct movetext *move = malloc(sizeof(struct movetext));
 
 	if (check(parser, TK_INTEGER)) {
 		expect(parser, TK_INTEGER);
@@ -258,13 +258,14 @@ static void move(struct parser *parser)
 	expect(parser, TK_SYMBOL);
 
 	if (parser->unhandled_error) {
-		fprintf(stderr, "[Parser Error] Unable to parse 'move' due to errors\n");
+		fprintf(stderr, "[Parser Error] Unable to parse 'movetext' due to errors\n");
 		parser->unhandled_error = false;
 	} else {
 		list_add(&parser->pgn->moves, &move->node);
 	}
 }
 
+// TODO: error codes
 void pgn_read(struct pgn* pgn, char* filename)
 {
 	// initialization
@@ -285,8 +286,8 @@ void pgn_read(struct pgn* pgn, char* filename)
 	while (parser.token.type != TK_EOF) {
 		switch (parser.token.type) {
 		case TK_LBRACKET: tag(&parser);  break;
-		case TK_INTEGER:  move(&parser); break;
-		case TK_SYMBOL:	  move(&parser); break;
+		case TK_INTEGER:  movetext(&parser); break;
+		case TK_SYMBOL:	  movetext(&parser); break;
 		default: 	  next_token(&parser);
 		}
 	}
@@ -308,7 +309,7 @@ void pgn_free(struct pgn *pgn)
 		free(tag->desc);
 		free(tag);
 	}
-	struct move *move, *tmp_move;
+	struct movetext *move, *tmp_move;
 	list_for_each_entry_safe(move, tmp_move, &pgn->moves, node) {
 		free(move->white);
 		free(move->black);
