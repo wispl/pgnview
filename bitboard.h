@@ -21,6 +21,9 @@ typedef unsigned long long u64;
 #define rank_7 (rank_1 << (8 * 6))
 #define rank_8 (rank_1 << (8 * 7))
 
+// square to bitboard
+#define square_bb(square) (1ULL << (square))
+
 // rank, file, diagonal and antidiagonal associated with the square
 #define rank(square) (0xFFULL << ((square) & 56))
 #define file(square) (0x0101010101010101ULL << ((square) & 7))
@@ -39,7 +42,6 @@ int lsb(u64 bb);
 int msb(u64 bb);
 int pop_lsb(u64 bb);
 
-// shifts
 enum direction {
     NORTH = 8,
     EAST  = 1,
@@ -50,6 +52,7 @@ enum direction {
     SOUTH_WEST = SOUTH + WEST,
     NORTH_WEST = NORTH + WEST
 };
+
 // shift function
 u64 shift(u64 bb, enum direction dir);
 // shift macros

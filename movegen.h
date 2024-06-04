@@ -63,6 +63,7 @@ struct movelist {
 };
 
 void init_lineattacks_table();
+void init_board(struct board *board);
 void generate_moves(struct board *board, struct movelist *list, enum piece piece,
 		    enum color color, enum movetype type);
 void movelist_clear(struct movelist *list);
