@@ -44,7 +44,7 @@ enum piece {
 struct board {
 	// index square for piece type
 	enum piece squares[64];
-	// piece bitborads
+	// piece bitboards
 	u64 pieces[PIECE_MAX];
 	// color bitboards
 	u64 colors[COLOR_MAX];
@@ -72,6 +72,7 @@ void init_lineattacks_table();
 void generate_moves(struct board *board, struct movelist *list, enum piece piece,
 		    enum color color, enum movetype type);
 void board_init(struct board *board);
+void board_move(struct board *board, enum color color, struct move *move);
 void movelist_clear(struct movelist *list);
 
 #endif

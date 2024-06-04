@@ -227,6 +227,19 @@ void board_init(struct board *board)
 	memcpy(board->squares, squares, 64 * sizeof(enum piece));
 }
 
+void board_move(struct board *board, enum color color, struct move *move)
+{
+	enum piece piece = board->squares[move->from];
+	u64 from_to = square_bb(move->from) | square_bb(move->to);
+
+	board->pieces[ALL]   ^= from_to;
+	board->pieces[piece] ^= from_to;
+	board->colors[color] ^= from_to;
+
+	board->squares[move->from] = EMPTY;
+	board->squares[move->to]   = piece;
+}
+
 void movelist_clear(struct movelist *list)
 {
 	list->len = 0;
