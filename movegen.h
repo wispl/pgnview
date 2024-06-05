@@ -43,7 +43,8 @@ enum piece {
 enum piece_id {
 	W_KING = KING, W_QUEEN, W_ROOK, W_BISHOP, W_KNIGHT, W_PAWN,
 	B_KING,        B_QUEEN, B_ROOK, B_BISHOP, B_KNIGHT, B_PAWN,
-	EMPTY
+	EMPTY,
+	PIECE_ID_MAX
 };
 #define piece_color(id) ((id) < B_KING)
 #define piece_type(id)  ((id) - (piece_color((id)) * B_KING))

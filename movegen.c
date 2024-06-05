@@ -11,7 +11,8 @@
 // indexed by lineattacks[diagonal|antidiagonal|horizontal|vertcal][square]
 // and gives the respective bitboard for each lineattack for the square
 static u64 lineattacks[4][64];
-static char* unicode[13] = {
+
+static const char* piece_str[PIECE_ID_MAX] = {
 	[W_KING]   = "WK",
 	[W_QUEEN]  = "WQ",
 	[W_ROOK]   = "WR",
@@ -292,7 +293,7 @@ void board_print(struct board *board)
 			if (!file) {
 				printf("%d ", rank + 1);
 			}
-			printf(" %s", unicode[board->squares[square]]);
+			printf(" %s", piece_str[board->squares[square]]);
 		}
 		printf("\n");
 	}
