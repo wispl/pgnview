@@ -42,7 +42,7 @@ enum piece {
 
 enum piece_id {
 	W_KING = KING, W_QUEEN, W_ROOK, W_BISHOP, W_KNIGHT, W_PAWN,
-	B_KING, B_QUEEN, B_ROOK, B_BISHOP, B_KNIGHT, B_PAWN,
+	B_KING,        B_QUEEN, B_ROOK, B_BISHOP, B_KNIGHT, B_PAWN,
 	EMPTY
 };
 #define piece_color(id) ((id) < B_KING)
@@ -76,13 +76,14 @@ struct movelist {
 };
 
 void init_lineattacks_table();
+void movelist_clear(struct movelist *list);
 void generate_moves(struct board *board, struct movelist *list, enum piece piece,
 		    enum color color, enum movetype type);
+
 void board_init(struct board *board);
 void board_add(struct board *board, int square, enum piece_id id);
 void board_remove(struct board *board, int square);
 void board_move(struct board *board, struct move *move);
-void movelist_clear(struct movelist *list);
-void print_squares(enum piece pieces[64]);
+void board_print(struct board *board);
 
 #endif

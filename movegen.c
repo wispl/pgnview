@@ -11,6 +11,21 @@
 // indexed by lineattacks[diagonal|antidiagonal|horizontal|vertcal][square]
 // and gives the respective bitboard for each lineattack for the square
 static u64 lineattacks[4][64];
+static char* unicode[13] = {
+	[W_KING]   = "WK",
+	[W_QUEEN]  = "WQ",
+	[W_ROOK]   = "WR",
+	[W_BISHOP] = "WB",
+	[W_KNIGHT] = "WN",
+	[W_PAWN]   = "WP",
+	[B_KING]   = "BK",
+	[B_QUEEN]  = "BQ",
+	[B_ROOK]   = "BR",
+	[B_BISHOP] = "BB",
+	[B_KNIGHT] = "BN",
+	[B_PAWN]   = "BP",
+	[EMPTY]    = "..",
+};
 
 void init_lineattacks_table()
 {
@@ -269,7 +284,7 @@ void movelist_clear(struct movelist *list)
 	list->len = 0;
 }
 
-void print_squares(enum piece pieces[64])
+void board_print(struct board *board)
 {
 	for (int rank = 7; rank >= 0; --rank) {
 		for (int file = 0; file < 8; ++file) {
@@ -277,20 +292,9 @@ void print_squares(enum piece pieces[64])
 			if (!file) {
 				printf("%d ", rank + 1);
 			}
-			char c;
-			switch (pieces[square]) {
-				case KING:   c = 'K'; break;
-				case QUEEN:  c = 'Q'; break;
-				case ROOK:   c = 'R'; break;
-				case BISHOP: c = 'B'; break;
-				case KNIGHT: c = 'N'; break;
-				case PAWN:   c = 'P'; break;
-				case EMPTY:  c = '.'; break;
-				default:     c = '?';
-			}
-			printf(" %c", c);
+			printf(" %s", unicode[board->squares[square]]);
 		}
 		printf("\n");
 	}
-	printf("\n   a b c d e f g h\n");
+	printf("\n   a  b  c  d  e  f  g  h\n");
 }
