@@ -38,12 +38,19 @@ enum piece {
 	PAWN,
 	ALL,
 	PIECE_MAX,
-	EMPTY
 };
 
+enum piece_id {
+	W_KING = KING, W_QUEEN, W_ROOK, W_BISHOP, W_KNIGHT, W_PAWN,
+	B_KING, B_QUEEN, B_ROOK, B_BISHOP, B_KNIGHT, B_PAWN,
+	EMPTY
+};
+#define piece_color(id) ((id) < B_KING)
+#define piece_type(id)  ((id) - (piece_color((id)) * B_KING))
+
 struct board {
-	// index square for piece type
-	enum piece squares[64];
+	// index squares for piece id
+	enum piece_id squares[64];
 	// piece bitboards
 	u64 pieces[PIECE_MAX];
 	// color bitboards
@@ -72,7 +79,9 @@ void init_lineattacks_table();
 void generate_moves(struct board *board, struct movelist *list, enum piece piece,
 		    enum color color, enum movetype type);
 void board_init(struct board *board);
-void board_move(struct board *board, enum color color, struct move *move);
+void board_add(struct board *board, int square, enum piece_id id);
+void board_remove(struct board *board, int square);
+void board_move(struct board *board, struct move *move);
 void movelist_clear(struct movelist *list);
 void print_squares(enum piece pieces[64]);
 

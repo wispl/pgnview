@@ -216,29 +216,52 @@ void board_init(struct board *board)
 	board->pieces[PAWN]   = rank_2 | rank_7;
 	board->pieces[ALL]    = rank_1 |rank_2 | rank_7 | rank_8;
 	int squares[64] = {
-		ROOK,  KNIGHT,BISHOP,QUEEN, KING,  BISHOP,KNIGHT,ROOK,
-		PAWN,  PAWN,  PAWN,  PAWN,  PAWN,  PAWN,  PAWN,  PAWN,
-		EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY,
-		EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY,
-		EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY,
-		EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY,
-		PAWN,  PAWN,  PAWN,  PAWN,  PAWN,  PAWN,  PAWN,  PAWN,
-		ROOK,  KNIGHT,BISHOP,QUEEN, KING,  BISHOP,KNIGHT,ROOK
+		W_ROOK, W_KNIGHT, W_BISHOP, W_QUEEN, W_KING, W_BISHOP, W_KNIGHT, W_ROOK,
+		W_PAWN, W_PAWN,   W_PAWN,   W_PAWN,  W_PAWN, W_PAWN,   W_PAWN,   W_PAWN,
+		EMPTY,  EMPTY,    EMPTY,    EMPTY,   EMPTY,  EMPTY,    EMPTY,    EMPTY,
+		EMPTY,  EMPTY,    EMPTY,    EMPTY,   EMPTY,  EMPTY,    EMPTY,    EMPTY,
+		EMPTY,  EMPTY,    EMPTY,    EMPTY,   EMPTY,  EMPTY,    EMPTY,    EMPTY,
+		EMPTY,  EMPTY,    EMPTY,    EMPTY,   EMPTY,  EMPTY,    EMPTY,    EMPTY,
+		B_PAWN, B_PAWN,   B_PAWN,   B_PAWN,  B_PAWN, B_PAWN,   B_PAWN,   B_PAWN,
+		B_ROOK, B_KNIGHT, B_BISHOP, B_QUEEN, B_KING, B_BISHOP, B_KNIGHT, B_ROOK
 	};
 	memcpy(board->squares, squares, 64 * sizeof(enum piece));
 }
 
-void board_move(struct board *board, enum color color, struct move *move)
+void board_add(struct board *board, int square, enum piece_id id)
 {
-	enum piece piece = board->squares[move->from];
+	u64 bb = square_bb(square);
+
+	board->pieces[ALL]             |= bb;
+	board->pieces[piece_type(id)]  |= bb;
+	board->colors[piece_color(id)] |= bb;
+
+	board->squares[square] = id;
+}
+
+void board_remove(struct board *board, int square)
+{
+	enum piece_id id = board->squares[square];
+	u64 bb = square_bb(square);
+
+	board->pieces[ALL]             ^= bb;
+	board->pieces[piece_type(id)]  ^= bb;
+	board->colors[piece_color(id)] ^= bb;
+
+	board->squares[square] = EMPTY;
+}
+
+void board_move(struct board *board, struct move *move)
+{
+	enum piece_id id = board->squares[move->from];
 	u64 from_to = square_bb(move->from) | square_bb(move->to);
 
-	board->pieces[ALL]   ^= from_to;
-	board->pieces[piece] ^= from_to;
-	board->colors[color] ^= from_to;
+	board->pieces[ALL]             ^= from_to;
+	board->pieces[piece_type(id)]  ^= from_to;
+	board->colors[piece_color(id)] ^= from_to;
 
 	board->squares[move->from] = EMPTY;
-	board->squares[move->to]   = piece;
+	board->squares[move->to]   = id;
 }
 
 void movelist_clear(struct movelist *list)
