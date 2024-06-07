@@ -38,9 +38,10 @@ void init_lineattacks_table()
 	}
 }
 
-static void add_move(struct movelist *list, int from, int to)
+static void add_move(struct movelist *list, enum movetype type, int from, int to)
 {
 	int index = list->len;
+	list->moves[index].type = type;
 	list->moves[index].from = from;
 	list->moves[index].to   = to;
 	++list->len;
@@ -147,11 +148,11 @@ static void generate_pawn_moves(struct board *board, struct movelist *list,
 		
 		while (b1) {
 			int to = pop_lsb(&b1);
-			add_move(list, to - up, to);
+			add_move(list, QUIET, to - up, to);
 		}
 		while (b2) {
 			int to = pop_lsb(&b2);
-			add_move(list, to - up - up, to);
+			add_move(list, QUIET, to - up - up, to);
 		}
 	} else if (type == PROMOTION) {
 		u64 b1 = shift(rank7_pawns, up_right) & enemies;
@@ -160,17 +161,17 @@ static void generate_pawn_moves(struct board *board, struct movelist *list,
 
 		while (b1) {
 			int to = pop_lsb(&b1);
-			add_move(list, to - up_right , to);
+			add_move(list, PROMOTION, to - up_right , to);
 		}
 
 		while (b2) {
 			int to = pop_lsb(&b2);
-			add_move(list, to - up_left, to);
+			add_move(list, PROMOTION, to - up_left, to);
 		}
 
 		while (b3) {
 			int to = pop_lsb(&b3);
-			add_move(list, to - up, to);
+			add_move(list, PROMOTION, to - up, to);
 		}
 	} else if (type == CAPTURE) {
 		// regular captures
@@ -179,11 +180,11 @@ static void generate_pawn_moves(struct board *board, struct movelist *list,
 
 		while (b1) {
 			int to = pop_lsb(&b1);
-			add_move(list, to - up_right , to);
+			add_move(list, CAPTURE, to - up_right , to);
 		}
 		while (b2) {
 			int to = pop_lsb(&b2);
-			add_move(list, to - up_left, to);
+			add_move(list, CAPTURE, to - up_left, to);
 		}
 	}
 }
@@ -211,7 +212,7 @@ void generate_moves(struct board *board, struct movelist *list, enum piece piece
 		}
 
 		while (bb) {
-			add_move(list, from, pop_lsb(&bb));
+			add_move(list, type, from, pop_lsb(&bb));
 		}
 	}
 }

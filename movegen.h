@@ -62,11 +62,12 @@ struct board {
 
 enum movetype {
 	QUIET,		// movement only, no material is altered
-	PROMOTION,	// material is added for promoting side
 	CAPTURE,	// material is decreased for opposing side
+	PROMOTION,	// material is added for promoting side
 };
 
 struct move {
+	enum movetype type;
 	int from;
 	int to;
 };
