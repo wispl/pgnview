@@ -16,8 +16,9 @@ struct pgn_move {
 };
 
 struct pgn {
-	struct node tags;
-	struct node moves;
+	struct node tags;	// all tags in parsed order
+	struct node moves;	// all moves (white and black) in order
+	char result[8];		// result of the game
 };
 
 void pgn_read(struct pgn *pgn, char *filename);

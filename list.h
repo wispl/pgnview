@@ -35,12 +35,20 @@ static inline void list_init(struct node* head)
 	head->prev = head;
 }
 
-static inline void list_add(struct node* head, struct node* new)
+static inline void list_add(struct node *head, struct node *new)
 {
 	new->next = head;
 	new->prev = head->prev;
 	head->prev->next = new;
 	head->prev = new;
+}
+
+static inline void list_del(struct node *node)
+{
+	node->prev->next = node->next;
+	node->next->prev = node->prev;
+	node->next = NULL;
+	node->prev = NULL;
 }
 
 #endif

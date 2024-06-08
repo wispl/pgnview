@@ -284,7 +284,7 @@ void pgn_read(struct pgn* pgn, char* filename)
 		return;
 	}
 
-	// main parser loop
+	// parsing
 	next_token(&parser);
 	while (parser.token.type != TK_EOF) {
 		switch (parser.token.type) {
@@ -294,6 +294,14 @@ void pgn_read(struct pgn* pgn, char* filename)
 		default: 	  next_token(&parser);
 		}
 	}
+
+	// finalization
+	// Delete last move node as it provides the result of the game
+	struct node *last = pgn->moves.prev;
+	char *result = container_of(last, struct pgn_move, node)->text;
+	memcpy(pgn->result, result, 8 * sizeof(char));
+	list_del(last);
+	free(last);
 
 	// cleanup
 	fclose(parser.file);
