@@ -191,6 +191,8 @@ static void generate_pawn_moves(struct board *board, struct movelist *list,
 
 void generate_moves(struct board *board, struct movelist *list, struct movegenc *conf)
 {
+	// clear the list
+	list->len = 0;
 	if (conf->piece == PAWN) {
 		generate_pawn_moves(board, list, conf->color, conf->movetype);
 		return;
@@ -273,11 +275,6 @@ void board_move(struct board *board, struct move *move)
 
 	board->squares[move->from] = EMPTY;
 	board->squares[move->to]   = id;
-}
-
-void movelist_clear(struct movelist *list)
-{
-	list->len = 0;
 }
 
 void board_print(struct board *board)

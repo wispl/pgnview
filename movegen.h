@@ -72,6 +72,7 @@ struct move {
 	int to;
 };
 
+// stores generated moves
 struct movelist {
 	struct move moves[256];
 	int len;
@@ -85,7 +86,6 @@ struct movegenc {
 };
 
 void init_lineattacks_table();
-void movelist_clear(struct movelist *list);
 void generate_moves(struct board *board, struct movelist *list, struct movegenc *conf);
 
 void board_init(struct board *board);
