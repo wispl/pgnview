@@ -46,7 +46,7 @@ enum piece_id {
 	EMPTY,
 	PIECE_ID_MAX
 };
-#define piece_color(id) ((id) < B_KING)
+#define piece_color(id) (!((id) < B_KING))
 #define piece_type(id)  ((id) - (piece_color((id)) * B_KING))
 
 struct board {
