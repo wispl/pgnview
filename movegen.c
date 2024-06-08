@@ -123,9 +123,12 @@ static u64 attacks_bb(int square, u64 occupied, enum piece piece)
 }
 
 // TODO: handle en passant
-static void generate_pawn_moves(struct board *board, struct movebuf *buf,
-				enum color color, enum movetype movetype)
+static void generate_pawn_moves(struct board *board, struct movebuf *buf, struct movegenc *conf)
 {
+	enum movetype movetype = conf->movetype;
+	enum color color = conf->color;
+	int target = conf->target;
+
 	u64 empty   = ~board->pieces[ALL];
 	u64 enemies =  board->colors[flip_color(color)];
 
@@ -145,6 +148,8 @@ static void generate_pawn_moves(struct board *board, struct movebuf *buf,
 	if (movetype == QUIET) {
 		u64 b1 = shift(not_rank7_pawns, up) & empty;
 		u64 b2 = shift(shift(rank2_pawns, up), up) & empty;
+		b1 &= target;
+		b2 &= target;
 		
 		while (b1) {
 			int to = pop_lsb(&b1);
@@ -158,6 +163,9 @@ static void generate_pawn_moves(struct board *board, struct movebuf *buf,
 		u64 b1 = shift(rank7_pawns, up_right) & enemies;
 		u64 b2 = shift(rank7_pawns, up_left) & enemies;
 		u64 b3 = shift(rank7_pawns, up) & empty;
+		b1 &= target;
+		b2 &= target;
+		b3 &= target;
 
 		while (b1) {
 			int to = pop_lsb(&b1);
@@ -177,6 +185,8 @@ static void generate_pawn_moves(struct board *board, struct movebuf *buf,
 		// regular captures
 		u64 b1 = shift(not_rank7_pawns, up_right) & enemies;
 		u64 b2 = shift(not_rank7_pawns, up_left) & enemies;
+		b1 &= target;
+		b2 &= target;
 
 		while (b1) {
 			int to = pop_lsb(&b1);
@@ -194,7 +204,7 @@ void generate_moves(struct board *board, struct movebuf *buf, struct movegenc *c
 	// clear the buffer
 	buf->len = 0;
 	if (conf->piece == PAWN) {
-		generate_pawn_moves(board, buf, conf->color, conf->movetype);
+		generate_pawn_moves(board, buf, conf);
 		return;
 	}
 
@@ -207,6 +217,7 @@ void generate_moves(struct board *board, struct movebuf *buf, struct movegenc *c
 		int from = pop_lsb(&pieces);
 		u64 bb   = attacks_bb(from, occupied, conf->piece);
 		bb &= (conf->movetype == CAPTURE) ? enemies : empty;
+		bb &= conf->target;
 		while (bb) {
 			add_move(buf, conf->movetype, from, pop_lsb(&bb));
 		}

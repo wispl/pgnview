@@ -83,6 +83,7 @@ struct movegenc {
 	enum movetype movetype;	// type of move to generate
 	enum piece piece;	// piece to generate moves for
 	enum color color;	// color to generate moves for
+	int target;		// target square
 };
 
 void init_lineattacks_table();
