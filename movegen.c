@@ -189,30 +189,24 @@ static void generate_pawn_moves(struct board *board, struct movelist *list,
 	}
 }
 
-void generate_moves(struct board *board, struct movelist *list, enum piece piece,
-		    enum color color, enum movetype type)
+void generate_moves(struct board *board, struct movelist *list, struct movegenc *conf)
 {
-	if (piece == PAWN) {
-		generate_pawn_moves(board, list, color, type);
+	if (conf->piece == PAWN) {
+		generate_pawn_moves(board, list, conf->color, conf->movetype);
 		return;
 	}
 
-	assert(type != PROMOTION);
-	u64 pieces   =  pieces(board, piece, color);
+	assert(conf->movetype != PROMOTION);
+	u64 pieces   =  pieces(board, conf->piece, conf->color);
 	u64 occupied =  board->pieces[ALL];
 	u64 empty    = ~occupied;
-	u64 enemies  =  board->colors[flip_color(color)];
+	u64 enemies  =  board->colors[flip_color(conf->color)];
 	while (pieces) {
 		int from = pop_lsb(&pieces);
-		u64 bb   = attacks_bb(from, occupied, piece);
-		if (type == CAPTURE) {
-			bb &= enemies;
-		} else if (type == QUIET) {
-			bb &= empty;
-		}
-
+		u64 bb   = attacks_bb(from, occupied, conf->piece);
+		bb &= (conf->movetype == CAPTURE) ? enemies : empty;
 		while (bb) {
-			add_move(list, type, from, pop_lsb(&bb));
+			add_move(list, conf->movetype, from, pop_lsb(&bb));
 		}
 	}
 }

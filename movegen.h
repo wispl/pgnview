@@ -77,10 +77,16 @@ struct movelist {
 	int len;
 };
 
+// move generate configuration
+struct movegenc {
+	enum movetype movetype;	// type of move to generate
+	enum piece piece;	// piece to generate moves for
+	enum color color;	// color to generate moves for
+};
+
 void init_lineattacks_table();
 void movelist_clear(struct movelist *list);
-void generate_moves(struct board *board, struct movelist *list, enum piece piece,
-		    enum color color, enum movetype type);
+void generate_moves(struct board *board, struct movelist *list, struct movegenc *conf);
 
 void board_init(struct board *board);
 void board_add(struct board *board, int square, enum piece_id id);
