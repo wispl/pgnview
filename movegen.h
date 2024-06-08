@@ -73,7 +73,7 @@ struct move {
 };
 
 // stores generated moves
-struct movelist {
+struct movebuf {
 	struct move moves[256];
 	int len;
 };
@@ -86,7 +86,7 @@ struct movegenc {
 };
 
 void init_lineattacks_table();
-void generate_moves(struct board *board, struct movelist *list, struct movegenc *conf);
+void generate_moves(struct board *board, struct movebuf *buf, struct movegenc *conf);
 
 void board_init(struct board *board);
 void board_add(struct board *board, int square, enum piece_id id);

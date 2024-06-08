@@ -38,13 +38,13 @@ void init_lineattacks_table()
 	}
 }
 
-static void add_move(struct movelist *list, enum movetype movetype, int from, int to)
+static void add_move(struct movebuf *buf, enum movetype movetype, int from, int to)
 {
-	int index = list->len;
-	list->moves[index].movetype = movetype;
-	list->moves[index].from = from;
-	list->moves[index].to   = to;
-	++list->len;
+	int index = buf->len;
+	buf->moves[index].movetype = movetype;
+	buf->moves[index].from = from;
+	buf->moves[index].to   = to;
+	++buf->len;
 }
 
 static u64 knight_attacks_bb(int square)
@@ -123,7 +123,7 @@ static u64 attacks_bb(int square, u64 occupied, enum piece piece)
 }
 
 // TODO: handle en passant
-static void generate_pawn_moves(struct board *board, struct movelist *list,
+static void generate_pawn_moves(struct board *board, struct movebuf *buf,
 				enum color color, enum movetype movetype)
 {
 	u64 empty   = ~board->pieces[ALL];
@@ -148,11 +148,11 @@ static void generate_pawn_moves(struct board *board, struct movelist *list,
 		
 		while (b1) {
 			int to = pop_lsb(&b1);
-			add_move(list, QUIET, to - up, to);
+			add_move(buf, QUIET, to - up, to);
 		}
 		while (b2) {
 			int to = pop_lsb(&b2);
-			add_move(list, QUIET, to - up - up, to);
+			add_move(buf, QUIET, to - up - up, to);
 		}
 	} else if (movetype == PROMOTION) {
 		u64 b1 = shift(rank7_pawns, up_right) & enemies;
@@ -161,17 +161,17 @@ static void generate_pawn_moves(struct board *board, struct movelist *list,
 
 		while (b1) {
 			int to = pop_lsb(&b1);
-			add_move(list, PROMOTION, to - up_right , to);
+			add_move(buf, PROMOTION, to - up_right , to);
 		}
 
 		while (b2) {
 			int to = pop_lsb(&b2);
-			add_move(list, PROMOTION, to - up_left, to);
+			add_move(buf, PROMOTION, to - up_left, to);
 		}
 
 		while (b3) {
 			int to = pop_lsb(&b3);
-			add_move(list, PROMOTION, to - up, to);
+			add_move(buf, PROMOTION, to - up, to);
 		}
 	} else if (movetype == CAPTURE) {
 		// regular captures
@@ -180,21 +180,21 @@ static void generate_pawn_moves(struct board *board, struct movelist *list,
 
 		while (b1) {
 			int to = pop_lsb(&b1);
-			add_move(list, CAPTURE, to - up_right , to);
+			add_move(buf, CAPTURE, to - up_right , to);
 		}
 		while (b2) {
 			int to = pop_lsb(&b2);
-			add_move(list, CAPTURE, to - up_left, to);
+			add_move(buf, CAPTURE, to - up_left, to);
 		}
 	}
 }
 
-void generate_moves(struct board *board, struct movelist *list, struct movegenc *conf)
+void generate_moves(struct board *board, struct movebuf *buf, struct movegenc *conf)
 {
-	// clear the list
-	list->len = 0;
+	// clear the buffer
+	buf->len = 0;
 	if (conf->piece == PAWN) {
-		generate_pawn_moves(board, list, conf->color, conf->movetype);
+		generate_pawn_moves(board, buf, conf->color, conf->movetype);
 		return;
 	}
 
@@ -208,7 +208,7 @@ void generate_moves(struct board *board, struct movelist *list, struct movegenc 
 		u64 bb   = attacks_bb(from, occupied, conf->piece);
 		bb &= (conf->movetype == CAPTURE) ? enemies : empty;
 		while (bb) {
-			add_move(list, conf->movetype, from, pop_lsb(&bb));
+			add_move(buf, conf->movetype, from, pop_lsb(&bb));
 		}
 	}
 }
