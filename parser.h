@@ -3,12 +3,12 @@
 
 #include "list.h"
 
-struct tag {
+struct pgn_tag {
 	struct node node;
 	char *name, *desc;
 };
 
-struct movetext {
+struct pgn_move {
 	struct node node;
 	char *white, *black;
 	char *black_comment, *white_comment;

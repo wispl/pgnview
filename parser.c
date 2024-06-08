@@ -217,7 +217,7 @@ static inline void copy_token_value(char **buffer, struct token *token)
 // tag is made of the following tokens: "[ SYMBOL STRING ]"
 static void tag(struct parser *parser)
 {
-	struct tag *tag = malloc(sizeof(struct tag));
+	struct pgn_tag *tag = malloc(sizeof(struct pgn_tag));
 
 	expect(parser, TK_LBRACKET);
 
@@ -241,7 +241,7 @@ static void tag(struct parser *parser)
 // move is made of the following tokens: "(INTEGER PERIOD+)? SYMBOL SYMBOL"
 static void movetext(struct parser *parser)
 {
-	struct movetext *move = malloc(sizeof(struct movetext));
+	struct pgn_move *move = malloc(sizeof(struct pgn_move));
 
 	if (check(parser, TK_INTEGER)) {
 		expect(parser, TK_INTEGER);
@@ -303,13 +303,13 @@ void pgn_free(struct pgn *pgn)
 	}
 
 	// free allocated strings and nodes for tags and moves
-	struct tag *tag, *tmp_tag;
+	struct pgn_tag *tag, *tmp_tag;
 	list_for_each_entry_safe(tag, tmp_tag, &pgn->tags, node) {
 		free(tag->name);
 		free(tag->desc);
 		free(tag);
 	}
-	struct movetext *move, *tmp_move;
+	struct pgn_move *move, *tmp_move;
 	list_for_each_entry_safe(move, tmp_move, &pgn->moves, node) {
 		free(move->white);
 		free(move->black);
