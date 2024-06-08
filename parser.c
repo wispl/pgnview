@@ -214,7 +214,7 @@ static inline void copy_token_value(char **buffer, struct token *token)
 	memcpy(*buffer, token->value, token->len);
 }
 
-// tag is made of the following tokens: "[ SYMBOL STRING ]"
+// tag is made of the following tokens: "[SYMBOL STRING]"
 static void tag(struct parser *parser)
 {
 	struct pgn_tag *tag = malloc(sizeof(struct pgn_tag));
@@ -241,8 +241,10 @@ static void tag(struct parser *parser)
 // move is made of the following tokens: "(INTEGER PERIOD+)? SYMBOL SYMBOL"
 static void movetext(struct parser *parser)
 {
-	struct pgn_move *move = malloc(sizeof(struct pgn_move));
+	struct pgn_move *white = malloc(sizeof(struct pgn_move));
+	struct pgn_move *black = malloc(sizeof(struct pgn_move));
 
+	// move-indicator, the 1. in (1. e4 e5), is optional
 	if (check(parser, TK_INTEGER)) {
 		expect(parser, TK_INTEGER);
 		// weird, but unlimited periods is permitted by the standard
@@ -251,17 +253,18 @@ static void movetext(struct parser *parser)
 		} while (check(parser, TK_PERIOD));
 	}
 
-	copy_token_value(&move->white, &parser->token);
+	memcpy(&white->text, &parser->token.value, parser->token.len);
 	expect(parser, TK_SYMBOL);
 
-	copy_token_value(&move->black, &parser->token);
+	memcpy(&black->text, &parser->token.value, parser->token.len);
 	expect(parser, TK_SYMBOL);
 
 	if (parser->unhandled_error) {
 		fprintf(stderr, "[Parser Error] Unable to parse 'movetext' due to errors\n");
 		parser->unhandled_error = false;
 	} else {
-		list_add(&parser->pgn->moves, &move->node);
+		list_add(&parser->pgn->moves, &white->node);
+		list_add(&parser->pgn->moves, &black->node);
 	}
 }
 
@@ -311,8 +314,6 @@ void pgn_free(struct pgn *pgn)
 	}
 	struct pgn_move *move, *tmp_move;
 	list_for_each_entry_safe(move, tmp_move, &pgn->moves, node) {
-		free(move->white);
-		free(move->black);
 		free(move);
 	}
 }

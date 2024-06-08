@@ -10,8 +10,9 @@ struct pgn_tag {
 
 struct pgn_move {
 	struct node node;
-	char *white, *black;
-	char *black_comment, *white_comment;
+	char text[8];	// move encoding in SAN
+	int  nag;	// 0-255 NAG value (optional)
+	char *comment;  // comment (optional)
 };
 
 struct pgn {
