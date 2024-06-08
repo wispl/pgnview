@@ -67,7 +67,7 @@ enum movetype {
 };
 
 struct move {
-	enum movetype type;
+	enum movetype movetype;
 	int from;
 	int to;
 };

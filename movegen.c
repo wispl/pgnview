@@ -38,10 +38,10 @@ void init_lineattacks_table()
 	}
 }
 
-static void add_move(struct movelist *list, enum movetype type, int from, int to)
+static void add_move(struct movelist *list, enum movetype movetype, int from, int to)
 {
 	int index = list->len;
-	list->moves[index].type = type;
+	list->moves[index].movetype = movetype;
 	list->moves[index].from = from;
 	list->moves[index].to   = to;
 	++list->len;
@@ -124,7 +124,7 @@ static u64 attacks_bb(int square, u64 occupied, enum piece piece)
 
 // TODO: handle en passant
 static void generate_pawn_moves(struct board *board, struct movelist *list,
-				enum color color, enum movetype type)
+				enum color color, enum movetype movetype)
 {
 	u64 empty   = ~board->pieces[ALL];
 	u64 enemies =  board->colors[flip_color(color)];
@@ -142,7 +142,7 @@ static void generate_pawn_moves(struct board *board, struct movelist *list,
 	u64 rank2       = (color == WHITE) ? rank_2 : rank_7;
 	u64 rank2_pawns = pawns(board, color) & rank2;
 
-	if (type == QUIET) {
+	if (movetype == QUIET) {
 		u64 b1 = shift(not_rank7_pawns, up) & empty;
 		u64 b2 = shift(shift(rank2_pawns, up), up) & empty;
 		
@@ -154,7 +154,7 @@ static void generate_pawn_moves(struct board *board, struct movelist *list,
 			int to = pop_lsb(&b2);
 			add_move(list, QUIET, to - up - up, to);
 		}
-	} else if (type == PROMOTION) {
+	} else if (movetype == PROMOTION) {
 		u64 b1 = shift(rank7_pawns, up_right) & enemies;
 		u64 b2 = shift(rank7_pawns, up_left) & enemies;
 		u64 b3 = shift(rank7_pawns, up) & empty;
@@ -173,7 +173,7 @@ static void generate_pawn_moves(struct board *board, struct movelist *list,
 			int to = pop_lsb(&b3);
 			add_move(list, PROMOTION, to - up, to);
 		}
-	} else if (type == CAPTURE) {
+	} else if (movetype == CAPTURE) {
 		// regular captures
 		u64 b1 = shift(not_rank7_pawns, up_right) & enemies;
 		u64 b2 = shift(not_rank7_pawns, up_left) & enemies;
