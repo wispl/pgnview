@@ -1,5 +1,6 @@
 #include "movegen.h"
 
+#include "array.h"
 #include "bitboard.h"
 
 #include <assert.h>
@@ -38,13 +39,13 @@ void init_lineattacks_table()
 	}
 }
 
-static void add_move(struct movebuf *buf, enum movetype movetype, int from, int to)
+static void add_move(struct array *moves, enum movetype movetype, int from, int to)
 {
-	int index = buf->len;
-	buf->moves[index].movetype = movetype;
-	buf->moves[index].from = from;
-	buf->moves[index].to   = to;
-	++buf->len;
+	array_push(moves, ((struct move) {
+		.movetype = movetype,
+		.from = from,
+		.to = to
+	}));
 }
 
 static u64 knight_attacks_bb(int square)
@@ -123,7 +124,7 @@ static u64 attacks_bb(int square, u64 occupied, enum piece piece)
 }
 
 // TODO: handle en passant
-static void generate_pawn_moves(struct board *board, struct movebuf *buf, struct movegenc *conf)
+static void generate_pawn_moves(struct board *board, struct array *moves, struct movegenc *conf)
 {
 	enum movetype movetype = conf->movetype;
 	enum color color = conf->color;
@@ -153,11 +154,11 @@ static void generate_pawn_moves(struct board *board, struct movebuf *buf, struct
 		
 		while (b1) {
 			int to = pop_lsb(&b1);
-			add_move(buf, QUIET, to - up, to);
+			add_move(moves, QUIET, to - up, to);
 		}
 		while (b2) {
 			int to = pop_lsb(&b2);
-			add_move(buf, QUIET, to - up - up, to);
+			add_move(moves, QUIET, to - up - up, to);
 		}
 	} else if (movetype == PROMOTION) {
 		u64 b1 = shift(rank7_pawns, up_right) & enemies;
@@ -169,17 +170,17 @@ static void generate_pawn_moves(struct board *board, struct movebuf *buf, struct
 
 		while (b1) {
 			int to = pop_lsb(&b1);
-			add_move(buf, PROMOTION, to - up_right , to);
+			add_move(moves, PROMOTION, to - up_right , to);
 		}
 
 		while (b2) {
 			int to = pop_lsb(&b2);
-			add_move(buf, PROMOTION, to - up_left, to);
+			add_move(moves, PROMOTION, to - up_left, to);
 		}
 
 		while (b3) {
 			int to = pop_lsb(&b3);
-			add_move(buf, PROMOTION, to - up, to);
+			add_move(moves, PROMOTION, to - up, to);
 		}
 	} else if (movetype == CAPTURE) {
 		// regular captures
@@ -190,21 +191,19 @@ static void generate_pawn_moves(struct board *board, struct movebuf *buf, struct
 
 		while (b1) {
 			int to = pop_lsb(&b1);
-			add_move(buf, CAPTURE, to - up_right , to);
+			add_move(moves, CAPTURE, to - up_right , to);
 		}
 		while (b2) {
 			int to = pop_lsb(&b2);
-			add_move(buf, CAPTURE, to - up_left, to);
+			add_move(moves, CAPTURE, to - up_left, to);
 		}
 	}
 }
 
-void generate_moves(struct board *board, struct movebuf *buf, struct movegenc *conf)
+void generate_moves(struct board *board, struct array *moves, struct movegenc *conf)
 {
-	// clear the buffer
-	buf->len = 0;
 	if (conf->piece == PAWN) {
-		generate_pawn_moves(board, buf, conf);
+		generate_pawn_moves(board, moves, conf);
 		return;
 	}
 
@@ -218,8 +217,9 @@ void generate_moves(struct board *board, struct movebuf *buf, struct movegenc *c
 		u64 bb   = attacks_bb(from, occupied, conf->piece);
 		bb &= (conf->movetype == CAPTURE) ? enemies : empty;
 		bb &= conf->target;
+
 		while (bb) {
-			add_move(buf, conf->movetype, from, pop_lsb(&bb));
+			add_move(moves, conf->movetype, from, pop_lsb(&bb));
 		}
 	}
 }

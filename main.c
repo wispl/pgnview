@@ -35,17 +35,18 @@ int main(int argc, char **argv)
 	struct board board;
 	board_init(&board);
 
-	struct movebuf buf;
+	struct array moves;
+	array_init(&moves, sizeof(struct move));
 	struct movegenc movegenc = {
 		.piece = PAWN,
 		.color = WHITE,
 		.movetype = QUIET,
 		.target   = ~(0ULL),
 	};
-	generate_moves(&board, &buf, &movegenc);
+	generate_moves(&board, &moves, &movegenc);
 
-	for (int i = 0; i < buf.len; ++i) {
-		struct move move = buf.moves[i];
+	for (int i = 0; i < moves.len; ++i) {
+		struct move move = array_get(&moves, struct move, i);
 		print_square(move.from);
 		printf("->");
 		print_square(move.to);
@@ -54,7 +55,7 @@ int main(int argc, char **argv)
 	printf("\n\n");
 
 	printf("============= Testing Board =============\n");
-	board_move(&board, &buf.moves[2]);
+	board_move(&board, &array_get(&moves, struct move, 2));
 	struct move knight_move = {
 		.movetype = QUIET,
 		.from = g8,
@@ -62,6 +63,8 @@ int main(int argc, char **argv)
 	};
 	board_move(&board, &knight_move);
 	board_print(&board);
+
+	array_free(&moves);
 
 	return 1;
 }

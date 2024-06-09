@@ -1,6 +1,7 @@
 #ifndef MOVEGEN_H
 #define MOVEGEN_H
 
+#include "array.h"
 #include "bitboard.h"
 
 // Little endian ranked-file ordered square mapping
@@ -72,12 +73,6 @@ struct move {
 	int to;
 };
 
-// stores generated moves
-struct movebuf {
-	struct move moves[256];
-	int len;
-};
-
 // move generate configuration
 struct movegenc {
 	enum movetype movetype;	// type of move to generate
@@ -87,7 +82,7 @@ struct movegenc {
 };
 
 void init_lineattacks_table();
-void generate_moves(struct board *board, struct movebuf *buf, struct movegenc *conf);
+void generate_moves(struct board *board, struct array *moves, struct movegenc *conf);
 
 void board_init(struct board *board);
 void board_add(struct board *board, int square, enum piece_id id);
