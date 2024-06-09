@@ -127,7 +127,7 @@ static void generate_pawn_moves(struct board *board, struct movebuf *buf, struct
 {
 	enum movetype movetype = conf->movetype;
 	enum color color = conf->color;
-	int target = conf->target;
+	u64 target = conf->target;
 
 	u64 empty   = ~board->pieces[ALL];
 	u64 enemies =  board->colors[flip_color(color)];
