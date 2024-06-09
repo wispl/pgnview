@@ -1,6 +1,6 @@
 #include "parser.h"
 
-#include "list.h"
+#include "array.h"
 
 #include <ctype.h>
 #include <stdbool.h>
@@ -217,14 +217,14 @@ static inline void copy_token_value(char **buffer, struct token *token)
 // tag is made of the following tokens: "[SYMBOL STRING]"
 static void tag(struct parser *parser)
 {
-	struct pgn_tag *tag = malloc(sizeof(struct pgn_tag));
+	struct pgn_tag tag;
 
 	expect(parser, TK_LBRACKET);
 
-	copy_token_value(&tag->name, &parser->token);
+	copy_token_value(&tag.name, &parser->token);
 	expect(parser, TK_SYMBOL);
 
-	copy_token_value(&tag->desc, &parser->token);
+	copy_token_value(&tag.desc, &parser->token);
 	expect(parser, TK_STRING);
 
 	expect(parser, TK_RBRACKET);
@@ -233,7 +233,7 @@ static void tag(struct parser *parser)
 		fprintf(stderr, "[Parser Error] Unable to parse 'tag' due to errors\n");
 		parser->unhandled_error = false;
 	} else {
-		list_add(&parser->pgn->tags, &tag->node);
+		array_push(&parser->pgn->tags, tag);
 	}
 }
 
@@ -241,8 +241,7 @@ static void tag(struct parser *parser)
 // move is made of the following tokens: "(INTEGER PERIOD+)? SYMBOL SYMBOL"
 static void movetext(struct parser *parser)
 {
-	struct pgn_move *white = malloc(sizeof(struct pgn_move));
-	struct pgn_move *black = malloc(sizeof(struct pgn_move));
+	struct pgn_move white, black;
 
 	// move-indicator, the 1. in (1. e4 e5), is optional
 	if (check(parser, TK_INTEGER)) {
@@ -253,18 +252,18 @@ static void movetext(struct parser *parser)
 		} while (check(parser, TK_PERIOD));
 	}
 
-	memcpy(&white->text, &parser->token.value, parser->token.len);
+	memcpy(&white.text, &parser->token.value, parser->token.len);
 	expect(parser, TK_SYMBOL);
 
-	memcpy(&black->text, &parser->token.value, parser->token.len);
+	memcpy(&black.text, &parser->token.value, parser->token.len);
 	expect(parser, TK_SYMBOL);
 
 	if (parser->unhandled_error) {
 		fprintf(stderr, "[Parser Error] Unable to parse 'movetext' due to errors\n");
 		parser->unhandled_error = false;
 	} else {
-		list_add(&parser->pgn->moves, &white->node);
-		list_add(&parser->pgn->moves, &black->node);
+		array_push(&parser->pgn->moves, white);
+		array_push(&parser->pgn->moves, black);
 	}
 }
 
@@ -277,8 +276,8 @@ void pgn_read(struct pgn* pgn, char* filename)
 		.last_char = ' ',
 		.pgn = pgn
 	};
-	list_init(&pgn->tags);
-	list_init(&pgn->moves);
+	array_init(&pgn->tags, sizeof(struct pgn_tag));
+	array_init(&pgn->moves, sizeof(struct pgn_move));
 
 	if (parser.file == NULL) {
 		return;
@@ -296,12 +295,10 @@ void pgn_read(struct pgn* pgn, char* filename)
 	}
 
 	// finalization
-	// Delete last move node as it provides the result of the game
-	struct node *last = pgn->moves.prev;
-	char *result = container_of(last, struct pgn_move, node)->text;
-	memcpy(pgn->result, result, 8 * sizeof(char));
-	list_del(last);
-	free(last);
+	// Delete last move as it provides the result of the game
+	char *result = array_get(&pgn->moves, struct pgn_move, pgn->moves.len - 1).text;
+	memcpy(pgn->result, result, sizeof(char) * 8);
+	array_pop(&pgn->moves);
 
 	// cleanup
 	fclose(parser.file);
@@ -312,16 +309,10 @@ void pgn_free(struct pgn *pgn)
 	if (pgn == NULL) {
 		return;
 	}
-
-	// free allocated strings and nodes for tags and moves
-	struct pgn_tag *tag, *tmp_tag;
-	list_for_each_entry_safe(tag, tmp_tag, &pgn->tags, node) {
-		free(tag->name);
-		free(tag->desc);
-		free(tag);
+	for (int i = 0; i < pgn->tags.len; ++i) {
+		free(array_get(&pgn->tags, struct pgn_tag, i).name);
+		free(array_get(&pgn->tags, struct pgn_tag, i).desc);
 	}
-	struct pgn_move *move, *tmp_move;
-	list_for_each_entry_safe(move, tmp_move, &pgn->moves, node) {
-		free(move);
-	}
+	array_free(&pgn->tags);
+	array_free(&pgn->moves);
 }

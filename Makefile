@@ -4,8 +4,8 @@ OBJECTS = main.o parser.o movegen.o bitboard.o
 
 pgncat: $(OBJECTS)
 	$(CC) -o pgncat $(OBJECTS)
-main.o: parser.h list.h
-parser.o: parser.h list.h
+main.o: parser.h array.h
+parser.o: parser.h array.h
 movegen.o: movegen.h
 bitboard.o: bitboard.h
 clean:
