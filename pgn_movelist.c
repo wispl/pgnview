@@ -113,8 +113,7 @@ int santogenc(char *text, struct movegenc *conf)
 
 static bool find_move(struct board *board, struct movegenc *conf, int disamb, struct move *move)
 {
-	struct movelist moves;
-	array_init(&moves);
+	struct movelist ARRAY(moves);
 	generate_moves(board, &moves, conf);
 
 	if (moves.len == 1) {

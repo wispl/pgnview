@@ -36,8 +36,7 @@ int main(int argc, char **argv)
 	struct board board;
 	board_init(&board);
 
-	struct movelist moves;
-	array_init(&moves);
+	struct movelist ARRAY(moves);
 	struct movegenc movegenc = {
 		.piece = PAWN,
 		.color = WHITE,
