@@ -13,20 +13,20 @@
 // and gives the respective bitboard for each lineattack for the square
 static u64 lineattacks[4][64];
 
-static const char* piece_str[PIECE_ID_MAX] = {
-	[W_KING]   = "WK",
-	[W_QUEEN]  = "WQ",
-	[W_ROOK]   = "WR",
-	[W_BISHOP] = "WB",
-	[W_KNIGHT] = "WN",
-	[W_PAWN]   = "WP",
-	[B_KING]   = "BK",
-	[B_QUEEN]  = "BQ",
-	[B_ROOK]   = "BR",
-	[B_BISHOP] = "BB",
-	[B_KNIGHT] = "BN",
-	[B_PAWN]   = "BP",
-	[EMPTY]    = "..",
+static const char piece_str[PIECE_ID_MAX] = {
+	[W_KING]   = 'K',
+	[W_QUEEN]  = 'Q',
+	[W_ROOK]   = 'R',
+	[W_BISHOP] = 'B',
+	[W_KNIGHT] = 'N',
+	[W_PAWN]   = 'P',
+	[B_KING]   = 'k',
+	[B_QUEEN]  = 'q',
+	[B_ROOK]   = 'r',
+	[B_BISHOP] = 'b',
+	[B_KNIGHT] = 'n',
+	[B_PAWN]   = 'p',
+	[EMPTY]    = '.',
 };
 
 void init_lineattacks_table()
@@ -296,7 +296,7 @@ void board_print(struct board *board)
 			if (!file) {
 				printf("%d ", rank + 1);
 			}
-			printf(" %s", piece_str[board->squares[square]]);
+			printf(" %c", piece_str[board->squares[square]]);
 		}
 		printf("\n");
 	}
