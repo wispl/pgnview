@@ -18,10 +18,14 @@
 #define item_size(array) (sizeof((array)->data[0]))
 
 // Grows the array by DEFAULT_GROWTH_FACTOR
-#define grow(array)                                                                         \
-	do {                                                                                \
-		(array)->size *= DEFAULT_GROWTH_FACTOR;                                     \
-		(array)->data = realloc((array)->data, (array)->size * item_size((array))); \
+// TODO: handle errors
+#define grow(array)                                                                   \
+	do {                                                                          \
+		(array)->size *= DEFAULT_GROWTH_FACTOR;                               \
+		void *p = realloc((array)->data, (array)->size * item_size((array))); \
+		if (p) {                                                              \
+			(array)->data = p;                                            \
+		}                                                                     \
 	} while(0)
 
 // Initializes the array, array_free must be called on it later
