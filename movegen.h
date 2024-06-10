@@ -72,7 +72,7 @@ struct move {
 	int from;
 	int to;
 };
-array_define(movelist, struct move)
+array_define(movelist, struct move);
 
 // move generate configuration
 struct movegenc {

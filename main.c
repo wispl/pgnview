@@ -68,8 +68,7 @@ int main(int argc, char **argv)
 	array_free(&moves);
 
 	printf("============= Testing PGN Movelist =============\n");
-	struct movelist movelist;
-	array_init(&movelist);
+	struct movelist ARRAY(movelist);
 	pgn_movelist(&pgn.moves, &movelist);
 	for (int i = 0; i < movelist.len; ++i) {
 		struct move move = array_get(&movelist, i);
