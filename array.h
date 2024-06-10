@@ -2,6 +2,7 @@
 #define ARRAY_H
 
 #define DEFAULT_SIZE 8
+#define DEFAULT_GROWTH_FACTOR 2
 
 #include <stdlib.h>
 
@@ -13,7 +14,7 @@
 	};
 
 #define grow(array)	\
-	(array)->size *= 1.5;	\
+	(array)->size *= DEFAULT_GROWTH_FACTOR;	\
 	(array)->data = realloc((array)->data, (array)->size * sizeof((array)->data[0]));
 
 #define array_init(array)		\
