@@ -134,6 +134,7 @@ static bool find_move(struct board *board, struct movegenc *conf, int disamb, st
 			return true;
 		}
 	}
+	array_free(&moves);
 	return false;
 }
 
