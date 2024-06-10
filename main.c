@@ -28,8 +28,6 @@ int main(int argc, char **argv)
 	printf("%s\n", pgn.result);
 
 	printf("\n");
-	
-	pgn_free(&pgn);
 
 	printf("============= Testing Movegen =============\n");
 	init_lineattacks_table();
@@ -64,8 +62,6 @@ int main(int argc, char **argv)
 	board_move(&board, &knight_move);
 	board_print(&board);
 
-	array_free(&moves);
-
 	printf("============= Testing PGN Movelist =============\n");
 	struct movelist ARRAY(movelist);
 	pgn_movelist(&pgn.moves, &movelist);
@@ -76,6 +72,10 @@ int main(int argc, char **argv)
 		print_square(move.to);
 		printf(" ");
 	}
+
+	array_free(&movelist);
+	array_free(&moves);
+	pgn_free(&pgn);
 
 	return 1;
 }
