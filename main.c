@@ -6,35 +6,44 @@
 
 #include <stdio.h>
 
-int main(int argc, char **argv)
+static void test_parser()
 {
-	if (argc > 3 || argc < 2) {
-		printf("[Error] No arguments or too many arguments were passed\n");
-		return 0;
-	}
-
 	printf("============= Testing Parser =============\n");
 	struct pgn pgn;
-	pgn_read(&pgn, argv[1]);
 
+	pgn_read(&pgn, "test.pgn");
 	for (int i = 0; i < pgn.tags.len; ++i) {
-		printf("%s ", array_get(&pgn.tags, i).name);
-		printf("%s\n", array_get(&pgn.tags, i).desc);
+		struct pgn_tag tag = array_get(&pgn.tags, i);
+		printf("%s \"%s\"\n", tag.name, tag.desc);
+	}
+	printf("\n");
+	for (int i = 0; i < pgn.moves.len; ++i) {
+		printf("%s ", array_get(&pgn.moves, i).text);
+	}
+	printf("%s\n\n", pgn.result);
+
+	pgn_free(&pgn);
+	pgn_read(&pgn, "test2.pgn");
+	for (int i = 0; i < pgn.tags.len; ++i) {
+		struct pgn_tag tag = array_get(&pgn.tags, i);
+		printf("%s \"%s\"\n", tag.name, tag.desc);
 	}
 	printf("\n");
 	for (int i = 0; i < pgn.moves.len; ++i) {
 		printf("%s ", array_get(&pgn.moves, i).text);
 	}
 	printf("%s\n", pgn.result);
+	pgn_free(&pgn);
+}
 
-	printf("\n");
-
+static void test_movegen()
+{
 	printf("============= Testing Movegen =============\n");
 	init_lineattacks_table();
+	struct movelist ARRAY(moves);
 	struct board board;
 	board_init(&board);
 
-	struct movelist ARRAY(moves);
 	struct movegenc movegenc = {
 		.piece = PAWN,
 		.color = WHITE,
@@ -42,7 +51,6 @@ int main(int argc, char **argv)
 		.target   = ~(0ULL),
 	};
 	generate_moves(&board, &moves, &movegenc);
-
 	for (int i = 0; i < moves.len; ++i) {
 		struct move move = array_get(&moves, i);
 		print_square(move.from);
@@ -51,31 +59,57 @@ int main(int argc, char **argv)
 		printf(" ");
 	}
 	printf("\n\n");
+	array_free(&moves);
+}
 
+static void test_board()
+{
 	printf("============= Testing Board =============\n");
-	board_move(&board, &array_get(&moves, 2));
-	struct move knight_move = {
+	struct board board;
+	board_init(&board);
+
+	struct move m0 = {
+		.movetype = QUIET,
+		.from = e2,
+		.to   = e4
+	};
+	struct move m1 = {
 		.movetype = QUIET,
 		.from = g8,
 		.to   = f6
 	};
-	board_move(&board, &knight_move);
-	board_print(&board);
+	board_move(&board, &m0);
+	board_move(&board, &m1);
 
+	board_print(&board);
+}
+
+static void test_pgn_movelist()
+{
 	printf("============= Testing PGN Movelist =============\n");
-	struct movelist ARRAY(movelist);
-	pgn_movelist(&pgn.moves, &movelist);
-	for (int i = 0; i < movelist.len; ++i) {
-		struct move move = array_get(&movelist, i);
+	struct pgn pgn;
+	struct movelist ARRAY(moves);
+
+	pgn_read(&pgn, "test.pgn");
+	pgn_movelist(&pgn.moves, &moves);
+
+	for (int i = 0; i < moves.len; ++i) {
+		struct move move = array_get(&moves, i);
 		print_square(move.from);
 		printf("->");
 		print_square(move.to);
 		printf(" ");
 	}
-
-	array_free(&movelist);
+	printf("\n");
 	array_free(&moves);
 	pgn_free(&pgn);
+}
 
+int main(int argc, char **argv)
+{
+	test_parser();
+	test_movegen();
+	test_board();
+	test_pgn_movelist();
 	return 1;
 }
