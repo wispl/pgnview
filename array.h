@@ -6,6 +6,7 @@
 
 #include <stdlib.h>
 
+// Defines an array type of the given name storing the given item type
 #define array_define(name, item_type) \
 	struct name {		      \
 		int len;              \
@@ -13,14 +14,17 @@
 		item_type *data;      \
 	}
 
+// Size of item the array is storing
 #define item_size(array) (sizeof((array)->data[0]))
 
+// Grows the array by DEFAULT_GROWTH_FACTOR
 #define grow(array)                                                                         \
 	do {                                                                                \
 		(array)->size *= DEFAULT_GROWTH_FACTOR;                                     \
 		(array)->data = realloc((array)->data, (array)->size * item_size((array))); \
 	} while(0)
 
+// Initializes the array, array_free must be called on it later
 #define array_init(array)                                                   \
 	do {                                                                \
 		(array)->size = DEFAULT_SIZE;                               \
@@ -28,6 +32,8 @@
 		(array)->data = malloc((array)->size * item_size((array))); \
 	} while (0)
 
+// Defines an array with the given name, example:
+// static array_type ARRAY(my_array);
 #define ARRAY(name)                                                  \
 	(name) = {                                                   \
 		.size = DEFAULT_SIZE,                                \
