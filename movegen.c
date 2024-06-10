@@ -39,7 +39,7 @@ void init_lineattacks_table()
 	}
 }
 
-static void add_move(struct array *moves, enum movetype movetype, int from, int to)
+static void add_move(struct movelist *moves, enum movetype movetype, int from, int to)
 {
 	array_push(moves, ((struct move) {
 		.movetype = movetype,
@@ -124,7 +124,7 @@ static u64 attacks_bb(int square, u64 occupied, enum piece piece)
 }
 
 // TODO: handle en passant
-static void generate_pawn_moves(struct board *board, struct array *moves, struct movegenc *conf)
+static void generate_pawn_moves(struct board *board, struct movelist *moves, struct movegenc *conf)
 {
 	enum movetype movetype = conf->movetype;
 	enum color color = conf->color;
@@ -200,7 +200,7 @@ static void generate_pawn_moves(struct board *board, struct array *moves, struct
 	}
 }
 
-void generate_moves(struct board *board, struct array *moves, struct movegenc *conf)
+void generate_moves(struct board *board, struct movelist *moves, struct movegenc *conf)
 {
 	if (conf->piece == PAWN) {
 		generate_pawn_moves(board, moves, conf);

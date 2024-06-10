@@ -4,35 +4,33 @@
 #define DEFAULT_SIZE 8
 
 #include <stdlib.h>
-#include <stdio.h>
 
-struct array {
-	int len;
-	int size;
-	int item_size;
-	void *data;
-};
+#define array_define(name, item_type)	\
+	struct name {			\
+		int len;		\
+		int size;		\
+		item_type *data;	\
+	};
 
 #define grow(array)	\
 	(array)->size *= 1.5;	\
-	(array)->data = realloc((array)->data, (array)->size * (array)->item_size);
+	(array)->data = realloc((array)->data, (array)->size * sizeof((array)->data[0]));
 
-#define array_init(array, size_of)	\
-	(array)->item_size = (size_of);	\
+#define array_init(array)		\
 	(array)->size = DEFAULT_SIZE;	\
 	(array)->len = 0;		\
-	(array)->data = malloc(size_of * (array)->size);
+	(array)->data = malloc((array)->size * sizeof((array)->data[0]));
 
-#define array_push(array, v) 						\
-	do {								\
-		if ((array)->len == (array)->size) {			\
-			grow((array));					\
-		}							\
-		((typeof(v)*) (array)->data)[(array)->len] = (v);	\
-		++(array)->len;						\
+#define array_push(array, v) 				\
+	do {						\
+		if ((array)->len == (array)->size) {	\
+			grow((array));			\
+		}					\
+		(array)->data[(array)->len] = (v);	\
+		++(array)->len;				\
 	} while (0)
 
-#define array_get(array, type, index) ((type *)(array)->data)[(index)]
+#define array_get(array, index) (array)->data[(index)]
 
 #define array_pop(array)	(--(array)->len);
 

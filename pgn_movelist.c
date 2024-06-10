@@ -113,19 +113,19 @@ int santogenc(char *text, struct movegenc *conf)
 
 static bool find_move(struct board *board, struct movegenc *conf, int disamb, struct move *move)
 {
-	struct array moves;
-	array_init(&moves, sizeof(struct move));
+	struct movelist moves;
+	array_init(&moves);
 	generate_moves(board, &moves, conf);
 
 	if (moves.len == 1) {
 		// move = &array_get(&moves, struct move, 0);
-		memcpy(move, &array_get(&moves, struct move, 0), sizeof(struct move));
+		memcpy(move, &array_get(&moves, 0), sizeof(struct move));
 		array_free(&moves);
 		return true;
 	}
 
 	for (int i = 0; i < moves.len; ++i) {
-		struct move m = array_get(&moves, struct move, i);
+		struct move m = array_get(&moves, i);
 		bool match = (disamb == m.from) ||
 			     (disamb < 8 && (disamb == (m.from & 7))) ||
 			     (disamb == m.from / 8);
@@ -138,7 +138,7 @@ static bool find_move(struct board *board, struct movegenc *conf, int disamb, st
 	return false;
 }
 
-void pgn_movelist(struct array *pgn_moves, struct array *movelist)
+void pgn_movelist(struct pgn_movelist *pgn_moves, struct movelist *moves)
 {
 	struct board board;
 	board_init(&board);
@@ -146,13 +146,13 @@ void pgn_movelist(struct array *pgn_moves, struct array *movelist)
 	struct movegenc conf;
 	struct move move;
 	for (int i = 0; i < pgn_moves->len; ++i) {
-		struct pgn_move pgn_move = array_get(pgn_moves, struct pgn_move, i);
+		struct pgn_move pgn_move = array_get(pgn_moves, i);
 		conf.color = (i & 1);
 		int disamb = santogenc(pgn_move.text, &conf);
 		bool found = find_move(&board, &conf, disamb, &move);
 
 		if (found) {
-			array_push(movelist, move);
+			array_push(moves, move);
 			board_move(&board, &move);
 		}
 	}

@@ -72,6 +72,7 @@ struct move {
 	int from;
 	int to;
 };
+array_define(movelist, struct move)
 
 // move generate configuration
 struct movegenc {
@@ -82,7 +83,7 @@ struct movegenc {
 };
 
 void init_lineattacks_table();
-void generate_moves(struct board *board, struct array *moves, struct movegenc *conf);
+void generate_moves(struct board *board, struct movelist *moves, struct movegenc *conf);
 
 void board_init(struct board *board);
 void board_add(struct board *board, int square, enum piece_id id);

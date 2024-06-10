@@ -276,8 +276,8 @@ void pgn_read(struct pgn* pgn, char* filename)
 		.last_char = ' ',
 		.pgn = pgn
 	};
-	array_init(&pgn->tags, sizeof(struct pgn_tag));
-	array_init(&pgn->moves, sizeof(struct pgn_move));
+	array_init(&pgn->tags);
+	array_init(&pgn->moves);
 
 	if (parser.file == NULL) {
 		return;
@@ -296,7 +296,7 @@ void pgn_read(struct pgn* pgn, char* filename)
 
 	// finalization
 	// Delete last move as it provides the result of the game
-	char *result = array_get(&pgn->moves, struct pgn_move, pgn->moves.len - 1).text;
+	char *result = array_get(&pgn->moves, pgn->moves.len - 1).text;
 	memcpy(pgn->result, result, sizeof(char) * 8);
 	array_pop(&pgn->moves);
 
@@ -310,8 +310,8 @@ void pgn_free(struct pgn *pgn)
 		return;
 	}
 	for (int i = 0; i < pgn->tags.len; ++i) {
-		free(array_get(&pgn->tags, struct pgn_tag, i).name);
-		free(array_get(&pgn->tags, struct pgn_tag, i).desc);
+		free(array_get(&pgn->tags, i).name);
+		free(array_get(&pgn->tags, i).desc);
 	}
 	array_free(&pgn->tags);
 	array_free(&pgn->moves);

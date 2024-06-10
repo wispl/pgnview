@@ -18,12 +18,12 @@ int main(int argc, char **argv)
 	pgn_read(&pgn, argv[1]);
 
 	for (int i = 0; i < pgn.tags.len; ++i) {
-		printf("%s ", array_get(&pgn.tags, struct pgn_tag, i).name);
-		printf("%s\n", array_get(&pgn.tags, struct pgn_tag, i).desc);
+		printf("%s ", array_get(&pgn.tags, i).name);
+		printf("%s\n", array_get(&pgn.tags, i).desc);
 	}
 	printf("\n");
 	for (int i = 0; i < pgn.moves.len; ++i) {
-		printf("%s ", array_get(&pgn.moves, struct pgn_move, i).text);
+		printf("%s ", array_get(&pgn.moves, i).text);
 	}
 	printf("%s\n", pgn.result);
 
@@ -36,8 +36,8 @@ int main(int argc, char **argv)
 	struct board board;
 	board_init(&board);
 
-	struct array moves;
-	array_init(&moves, sizeof(struct move));
+	struct movelist moves;
+	array_init(&moves);
 	struct movegenc movegenc = {
 		.piece = PAWN,
 		.color = WHITE,
@@ -47,7 +47,7 @@ int main(int argc, char **argv)
 	generate_moves(&board, &moves, &movegenc);
 
 	for (int i = 0; i < moves.len; ++i) {
-		struct move move = array_get(&moves, struct move, i);
+		struct move move = array_get(&moves, i);
 		print_square(move.from);
 		printf("->");
 		print_square(move.to);
@@ -56,7 +56,7 @@ int main(int argc, char **argv)
 	printf("\n\n");
 
 	printf("============= Testing Board =============\n");
-	board_move(&board, &array_get(&moves, struct move, 2));
+	board_move(&board, &array_get(&moves, 2));
 	struct move knight_move = {
 		.movetype = QUIET,
 		.from = g8,
@@ -68,11 +68,11 @@ int main(int argc, char **argv)
 	array_free(&moves);
 
 	printf("============= Testing PGN Movelist =============\n");
-	struct array movelist;
-	array_init(&movelist, sizeof(struct move));
+	struct movelist movelist;
+	array_init(&movelist);
 	pgn_movelist(&pgn.moves, &movelist);
 	for (int i = 0; i < movelist.len; ++i) {
-		struct move move = array_get(&movelist, struct move, i);
+		struct move move = array_get(&movelist, i);
 		print_square(move.from);
 		printf("->");
 		print_square(move.to);
