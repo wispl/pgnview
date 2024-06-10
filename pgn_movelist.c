@@ -100,8 +100,10 @@ int santogenc(char *text, struct movegenc *conf)
 		len -= 1;
 		// get rid of the 'x', making it just a regular quiet move
 		// exd5 -> ed5, Nxf6 -> Nf6
-		text[x_start - text] 	 = text[1];
-		text[x_start - text + 1] = text[2];
+		int i = x_start - text;
+		text[i]     = text[i + 1];
+		text[i + 1] = text[i + 2];
+		text[i + 2] = '\0';
 		conf->movetype = CAPTURE;
 		
 	} else {
