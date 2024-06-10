@@ -1,6 +1,7 @@
 #include "array.h"
 #include "bitboard.h"
 #include "movegen.h"
+#include "pgn_movelist.h"
 #include "parser.h"
 
 #include <stdio.h>
@@ -8,7 +9,7 @@
 int main(int argc, char **argv)
 {
 	if (argc > 3 || argc < 2) {
-		printf("[Error] No arguments or too many arguments were passed");
+		printf("[Error] No arguments or too many arguments were passed\n");
 		return 0;
 	}
 
@@ -65,6 +66,18 @@ int main(int argc, char **argv)
 	board_print(&board);
 
 	array_free(&moves);
+
+	printf("============= Testing PGN Movelist =============\n");
+	struct array movelist;
+	array_init(&movelist, sizeof(struct move));
+	pgn_movelist(&pgn.moves, &movelist);
+	for (int i = 0; i < movelist.len; ++i) {
+		struct move move = array_get(&movelist, struct move, i);
+		print_square(move.from);
+		printf("->");
+		print_square(move.to);
+		printf(" ");
+	}
 
 	return 1;
 }
