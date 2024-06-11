@@ -252,7 +252,7 @@ void board_init(struct board *board)
 	memcpy(board->squares, squares, 64 * sizeof(enum piece));
 }
 
-void board_add(struct board *board, int square, enum piece_id id)
+void board_put_piece(struct board *board, int square, enum piece_id id)
 {
 	u64 bb = square_bb(square);
 
@@ -263,7 +263,7 @@ void board_add(struct board *board, int square, enum piece_id id)
 	board->squares[square] = id;
 }
 
-void board_remove(struct board *board, int square)
+void board_del_piece(struct board *board, int square)
 {
 	enum piece_id id = board->squares[square];
 	u64 bb = square_bb(square);
@@ -275,17 +275,43 @@ void board_remove(struct board *board, int square)
 	board->squares[square] = EMPTY;
 }
 
-void board_move(struct board *board, struct move *move)
+void board_move_piece(struct board *board, int from, int to)
 {
-	enum piece_id id = board->squares[move->from];
-	u64 from_to = square_bb(move->from) | square_bb(move->to);
+	enum piece_id id = board->squares[from];
+	u64 from_to = square_bb(from) | square_bb(to);
 
 	board->pieces[ALL]             ^= from_to;
 	board->pieces[piece_type(id)]  ^= from_to;
 	board->colors[piece_color(id)] ^= from_to;
 
-	board->squares[move->from] = EMPTY;
-	board->squares[move->to]   = id;
+	board->squares[from] = EMPTY;
+	board->squares[to]   = id;
+}
+
+void board_move(struct board *board, struct move *move)
+{
+	enum color color = piece_color(board->squares[move->from]);
+	enum piece piece = piece_type(board->squares[move->from]);
+	if (move->movetype == QUIET) {
+		board_move_piece(board, move->from, move->to);
+
+		// no castling rights if either king or rooks move
+		int i = color * 2;
+		if (piece == KING) {
+			board->castling[i] = board->castling[i + 1] = false;
+		} else if (piece == ROOK) {
+			int is_queenside = ((move->from & 7) == 0);
+			board->castling[i + is_queenside] = false;
+		}
+	} else if (move->movetype == CAPTURE) {
+		board_del_piece(board, move->to);
+		board_move_piece(board, move->from, move->to);
+	} else if (move->movetype == CASTLE) {
+	    	enum piece_id rook = board->squares[move->to];
+		board_del_piece(board, move->to);
+		board_move_piece(board, move->from, move->to);
+		board_put_piece(board, move->from, rook);
+	}
 }
 
 void board_print(struct board *board)

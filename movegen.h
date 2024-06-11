@@ -4,6 +4,8 @@
 #include "array.h"
 #include "bitboard.h"
 
+#include <stdbool.h>
+
 // Little endian ranked-file ordered square mapping
 enum squares {
 	a1, b1, c1, d1, e1, f1, g1, h1,
@@ -57,14 +59,17 @@ struct board {
 	u64 pieces[PIECE_MAX];
 	// color bitboards
 	u64 colors[COLOR_MAX];
+	// white kingside, white queenside, black kingside, black queenside
+	bool castling[4];
 };
 #define pieces(board, piece, color) ((board)->pieces[(piece)] & (board)->colors[(color)])
 #define pawns(board, color) (pieces((board), PAWN, (color)))
 
 enum movetype {
-	QUIET,		// movement only, no material is altered
-	CAPTURE,	// material is decreased for opposing side
-	PROMOTION,	// material is added for promoting side
+	QUIET,        // movement only, no material is altered
+	CAPTURE,      // material is decreased for opposing side
+	PROMOTION,    // material is added for promoting side
+	CASTLE,
 };
 
 struct move {
@@ -86,8 +91,9 @@ void init_lineattacks_table();
 void generate_moves(struct board *board, struct movelist *moves, struct movegenc *conf);
 
 void board_init(struct board *board);
-void board_add(struct board *board, int square, enum piece_id id);
-void board_remove(struct board *board, int square);
+void board_put_piece(struct board *board, int square, enum piece_id id);
+void board_del_piece(struct board *board, int square);
+void board_move_piece(struct board *board, int from, int to);
 void board_move(struct board *board, struct move *move);
 void board_print(struct board *board);
 
