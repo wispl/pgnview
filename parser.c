@@ -296,7 +296,7 @@ void pgn_read(struct pgn* pgn, char* filename)
 
 	// finalization
 	// Delete last move as it provides the result of the game
-	char *result = array_get(&pgn->moves, pgn->moves.len - 1).text;
+	char *result = array_last(&pgn->moves).text;
 	memcpy(pgn->result, result, sizeof(char) * 8);
 	array_pop(&pgn->moves);
 

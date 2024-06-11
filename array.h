@@ -56,6 +56,8 @@
 
 #define array_get(array, index) (array)->data[(index)]
 
+#define array_last(array) 	(array)->data[(array)->len - 1]
+
 #define array_pop(array)	(--(array)->len)
 
 #define array_clear(array)	((array)->len = 0)
