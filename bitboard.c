@@ -26,7 +26,7 @@ void print_bitboard(u64 bitboard)
 			if (!file) {
 				printf("%d ", rank + 1);
 			}
-			printf(" %c", get_bit(bitboard, square) ? '1' : '.');
+			printf(" %c", bitboard & (1ULL << square) ? '1' : '.');
 		}
 		printf("\n");
 	}

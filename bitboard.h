@@ -51,11 +51,6 @@ static inline u64 antidiagonal(int square)
 #define pos_ray(line, square) ((line) & (-2ULL << (square)))
 #define neg_ray(line, square) ((line) & ((1ULL << (square)) - 1))
 
-// bit operations
-#define get_bit(bitboard, square) (bitboard & (1ULL << square))
-#define set_bit(bitboard, square) (bitboard |= (1ULL << square))
-#define pop_bit(bitboard, square) (bitboard &= ~(1ULL << square))
-
 enum direction {
     NORTH = 8,
     EAST  = 1,
