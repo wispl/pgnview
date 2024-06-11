@@ -1,6 +1,7 @@
 #ifndef PGN_MOVELIST_H
 #define PGN_MOVELIST_H
 
+#include "move.h"
 #include "movegen.h"
 #include "parser.h"
 

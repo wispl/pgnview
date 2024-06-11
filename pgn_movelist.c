@@ -1,7 +1,8 @@
 #include "pgn_movelist.h"
 
-#include "bitboard.h"
 #include "array.h"
+#include "bitboard.h"
+#include "move.h"
 #include "movegen.h"
 #include "parser.h"
 
@@ -75,12 +76,12 @@ static int extract_san(char *text, int len, struct movegenc *conf)
 
 int santogenc(char *text, struct movegenc *conf)
 {
-	if (strcmp(text, "0-0-0") == 0) {
+	if (strcmp(text, "O-O-O") == 0) {
 		// TODO
 		return KING;
 	}
 
-	if (strcmp(text, "0-0") == 0) {
+	if (strcmp(text, "O-O") == 0) {
 		// TODO
 		return KING;
 	}
