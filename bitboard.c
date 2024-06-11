@@ -1,25 +1,6 @@
 #include "bitboard.h"
 
-#include <assert.h>
 #include <stdio.h>
-
-u64 diagonal(int square)
-{
-   const u64 main_diagonal = 0x8040201008040201;
-   int diag = 8 * (square & 7) - (square & 56);
-   int north = -diag & ( diag >> 31);
-   int south =  diag & (-diag >> 31);
-   return (main_diagonal >> south) << north;
-}
-
-u64 antidiagonal(int square)
-{
-   const u64 main_diagonal = 0x0102040810204080;
-   int diag = 56 - 8 * (square & 7) - (square & 56);
-   int north = -diag & ( diag >> 31);
-   int south =  diag & (-diag >> 31);
-   return (main_diagonal >> south) << north;
-}
 
 u64 shift(u64 bb, enum direction dir)
 {

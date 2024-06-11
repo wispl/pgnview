@@ -4,6 +4,7 @@
 typedef unsigned long      u32;
 typedef unsigned long long u64;
 
+// TODO: these should probably be uppercase
 #define file_a 0x0101010101010101ULL
 #define file_b (file_a << 1)
 #define file_c (file_a << 2)
@@ -22,14 +23,30 @@ typedef unsigned long long u64;
 #define rank_7 (rank_1 << (8 * 6))
 #define rank_8 (rank_1 << (8 * 7))
 
+// a1-h8 diagonal
+#define MAIN_DIAGONAL      0x8040201008040201ULL
+// a8-h1 diagonal
+#define MAIN_ANTIDIAGONAL  0x0102040810204080ULL
+
 // square to bitboard
 #define square_bb(square) (1ULL << (square))
 
 // rank, file, diagonal and antidiagonal associated with the square
 #define rank(square) (0xFFULL << ((square) & 56))
 #define file(square) (0x0101010101010101ULL << ((square) & 7))
-u64 diagonal(int square);
-u64 antidiagonal(int square);
+
+static inline u64 diagonal(int square)
+{
+	int diag = (square & 7) - (square >> 3);
+	return diag >= 0 ? MAIN_DIAGONAL >> diag * 8 : MAIN_DIAGONAL << -diag * 8;
+}
+
+static inline u64 antidiagonal(int square)
+{
+	int diag = 7 - (square & 7) - (square >> 3);
+	return diag >= 0 ? MAIN_ANTIDIAGONAL >> diag * 8 : MAIN_ANTIDIAGONAL << -diag * 8;
+}
+
 // gets positive or negative portion of rank, file, diagonal, or antidiagonal
 #define pos_ray(line, square) ((line) & (-2ULL << (square)))
 #define neg_ray(line, square) ((line) & ((1ULL << (square)) - 1))
