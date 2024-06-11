@@ -1,6 +1,7 @@
 #ifndef BITBOARD_H
 #define BITBOARD_H
 
+typedef unsigned long      u32;
 typedef unsigned long long u64;
 
 #define file_a 0x0101010101010101ULL
@@ -37,10 +38,6 @@ u64 antidiagonal(int square);
 #define get_bit(bitboard, square) (bitboard & (1ULL << square))
 #define set_bit(bitboard, square) (bitboard |= (1ULL << square))
 #define pop_bit(bitboard, square) (bitboard &= ~(1ULL << square))
-// least significant and most significant bit
-int lsb(u64 bb);
-int msb(u64 bb);
-int pop_lsb(u64 *bb);
 
 enum direction {
     NORTH = 8,
@@ -68,5 +65,38 @@ u64 shift(u64 bb, enum direction dir);
 // pretty print bitboard and squares
 void print_bitboard(u64 bitboard);
 void print_square(int square);
+
+static inline int lsb(u64 bb)
+{
+#if   defined(__GNUC__)
+	return (int) __builtin_ctzll(bb);
+#elif defined(_MSC_VER)
+	u32 i;
+	_BitScanForward64(&i, bb);
+	return i;
+#else
+	#error "Compiler not supported"
+#endif
+}
+
+static inline int msb(u64 bb)
+{
+#if   defined(__GNUC__)
+	return (int) 63 ^ __builtin_clzll(bb);
+#elif defined(_MSC_VER)
+	u32 i;
+	_BitScanReverse64(&i, bb);
+	return i;
+#else
+	#error "Compiler not supported"
+#endif
+}
+
+static inline int pop_lsb(u64 *bb)
+{
+	int i = lsb(*bb);
+	*bb &= *bb - 1;
+	return i;
+}
 
 #endif
