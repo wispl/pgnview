@@ -78,8 +78,8 @@ int santogenc(char *text, struct movegenc *conf, enum color color)
 {
 	conf->color = color;
 
-	bool short_castle = (strcmp(text, "0-0") == 0);
-	bool long_castle  = (strcmp(text, "0-0-0") == 0);
+	bool short_castle = (strcmp(text, "O-O") == 0);
+	bool long_castle  = (strcmp(text, "O-O-O") == 0);
 	if (short_castle || long_castle) {
 		conf->movetype = CASTLE;
 		conf->piece    = KING;
