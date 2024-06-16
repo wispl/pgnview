@@ -197,17 +197,16 @@ void generate_moves(struct board *board, struct movelist *moves, struct movegenc
 
 	// TODO: check for blockers when castling
 	if (conf->movetype == CASTLE) {
-		int shift = 2 * conf->color;
 		// king square
 		int king  = (conf->color == WHITE) ? e1 : e8;
 		// leftmost square of rooks row
-		int rooks = (conf->color == WHITE) ? a1 : a8;
+		int rook = (conf->color == WHITE) ? a1 : a8;
 
-		if (board->castling & (WHITE_KINGSIDE << shift)) {
-			add_move(moves, CASTLE, king, rooks);
+		if (can_castle_short(board, conf->color)) {
+			add_move(moves, CASTLE, king, rook);
 		}
-		if (board->castling & (WHITE_QUEENSIDE << shift)) {
-			add_move(moves, CASTLE, king, rooks + 7);
+		if (can_castle_long(board, conf->color)) {
+			add_move(moves, CASTLE, king, rook + 7);
 		}
 		return;
 	}

@@ -75,6 +75,8 @@ struct board {
 
 #define pieces(board, piece, color) ((board)->pieces[(piece)] & (board)->colors[(color)])
 #define pawns(board, color) (pieces((board), PAWN, (color)))
+#define can_castle_short(board, color) ((board)->castling & (WHITE_KINGSIDE << 2 * (color)))
+#define can_castle_long(board, color)  ((board)->castling & (WHITE_QUEENSIDE << 2 * (color)))
 
 void board_init(struct board *board);
 void board_put_piece(struct board *board, int square, enum piece_id id);
