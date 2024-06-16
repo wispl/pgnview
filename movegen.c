@@ -195,7 +195,25 @@ void generate_moves(struct board *board, struct movelist *moves, struct movegenc
 		return;
 	}
 
+	// TODO: check for blockers when castling
+	if (conf->movetype == CASTLE) {
+		int shift = 2 * conf->color;
+		// king square
+		int king  = (conf->color == WHITE) ? e1 : e8;
+		// leftmost square of rooks row
+		int rooks = a1 * conf->color;
+
+		if (board->castling & (WHITE_KINGSIDE << shift)) {
+			add_move(moves, CASTLE, king, rooks);
+		}
+		if (board->castling & (WHITE_QUEENSIDE << shift)) {
+			add_move(moves, CASTLE, king, rooks + 7);
+		}
+		return;
+	}
+
 	assert(conf->movetype != PROMOTION);
+
 	u64 pieces   =  pieces(board, conf->piece, conf->color);
 	u64 occupied =  board->pieces[ALL];
 	u64 empty    = ~occupied;
