@@ -94,8 +94,12 @@ void board_move(struct board *board, struct move *move)
 		board_move_piece(board, move->from, move->to);
 
 		if (piece == KING || piece == ROOK) {
-			enum castling side = ((move->from & 7) == 0) ? WHITE_QUEENSIDE : WHITE_KINGSIDE;
-			enum castling mask = (piece == KING) ? WHITE_BOTHSIDE : side;
+			enum castling side = ((move->from & 7) == 0) 
+				? WHITE_QUEENSIDE
+				: WHITE_KINGSIDE;
+			enum castling mask = (piece == KING)
+				? WHITE_BOTHSIDE 
+				: side;
 			int shift = color * 2;
 			board->castling &= ~((WHITE_KINGSIDE & mask) << shift);
 		}
@@ -122,5 +126,5 @@ void board_print(struct board *board)
 		}
 		printf("\n");
 	}
-	printf("\n   a  b  c  d  e  f  g  h\n");
+	printf("\n   a b c d e f g h\n");
 }
