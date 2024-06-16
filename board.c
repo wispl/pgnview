@@ -47,7 +47,7 @@ void board_init(struct board *board)
 		B_ROOK, B_KNIGHT, B_BISHOP, B_QUEEN, B_KING, B_BISHOP, B_KNIGHT, B_ROOK
 	};
 	memcpy(board->squares, squares, 64 * sizeof(enum piece));
-	board->castling = ANY_CASTLING
+	board->castling = ANY_CASTLING;
 }
 
 void board_put_piece(struct board *board, int square, enum piece_id id)
@@ -93,13 +93,11 @@ void board_move(struct board *board, struct move *move)
 	if (move->movetype == QUIET) {
 		board_move_piece(board, move->from, move->to);
 
-		// no castling rights if either king or rooks move
-		int i = color * 2;
-		if (piece == KING) {
-			board->castling[i] = board->castling[i + 1] = false;
-		} else if (piece == ROOK) {
-			int is_queenside = ((move->from & 7) == 0);
-			board->castling[i + is_queenside] = false;
+		if (piece == KING || piece == ROOK) {
+			enum castling side = ((move->from & 7) == 0) ? WHITE_QUEENSIDE : WHITE_KINGSIDE;
+			enum castling mask = (piece == KING) ? WHITE_BOTHSIDE : side;
+			int shift = color * 2;
+			board->castling &= ~((WHITE_KINGSIDE & mask) << shift);
 		}
 	} else if (move->movetype == CAPTURE) {
 		board_del_piece(board, move->to);
