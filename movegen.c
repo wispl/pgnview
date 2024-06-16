@@ -201,7 +201,7 @@ void generate_moves(struct board *board, struct movelist *moves, struct movegenc
 		// king square
 		int king  = (conf->color == WHITE) ? e1 : e8;
 		// leftmost square of rooks row
-		int rooks = a1 * conf->color;
+		int rooks = (conf->color == WHITE) ? a1 : a8;
 
 		if (board->castling & (WHITE_KINGSIDE << shift)) {
 			add_move(moves, CASTLE, king, rooks);
