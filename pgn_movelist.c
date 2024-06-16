@@ -123,6 +123,13 @@ int santogenc(char *text, struct movegenc *conf, enum color color)
 	return extract_san(text, len, conf);
 }
 
+static bool disambiguate(int disamb, int from)
+{
+	return disamb == from
+	    || (disamb < 8 && disamb == (from & 7))
+	    || disamb == (from / 8);
+}
+
 static bool find_move(struct board *board, struct movegenc *conf, int disamb, struct move *move)
 {
 	struct movelist ARRAY(moves);
@@ -136,10 +143,7 @@ static bool find_move(struct board *board, struct movegenc *conf, int disamb, st
 
 	for (int i = 0; i < moves.len; ++i) {
 		struct move m = array_get(&moves, i);
-		bool match = (disamb == m.from) ||
-			     (disamb < 8 && (disamb == (m.from & 7))) ||
-			     (disamb == m.from / 8);
-		if (match) {
+		if (disambiguate(disamb, m.from)) {
 			memcpy(move, &m, sizeof(struct move));
 			array_free(&moves);
 			return true;
