@@ -47,6 +47,7 @@ void board_init(struct board *board)
 		B_ROOK, B_KNIGHT, B_BISHOP, B_QUEEN, B_KING, B_BISHOP, B_KNIGHT, B_ROOK
 	};
 	memcpy(board->squares, squares, 64 * sizeof(enum piece));
+	board->castling = ANY_CASTLING
 }
 
 void board_put_piece(struct board *board, int square, enum piece_id id)

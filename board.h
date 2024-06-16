@@ -4,8 +4,6 @@
 #include "bitboard.h"
 #include "move.h"
 
-#include <stdbool.h>
-
 // Little endian ranked-file ordered square mapping
 enum squares {
 	a1, b1, c1, d1, e1, f1, g1, h1,
@@ -45,6 +43,25 @@ enum piece_id {
 #define piece_color(id) (!((id) < B_KING))
 #define piece_type(id)  ((id) - (piece_color((id)) * B_KING))
 
+enum castling {
+	// 0000
+	NO_CASTLING,
+	// 0001
+	WHITE_KINGSIDE  = 1,
+	// 0010
+	WHITE_QUEENSIDE = WHITE_KINGSIDE << 1,
+	// 0011
+	WHITE_BOTHSIDE  = WHITE_KINGSIDE | WHITE_QUEENSIDE,
+	// 0100
+	BLACK_KINGSIDE  = WHITE_KINGSIDE << 2,
+	// 1000
+	BLACK_QUEENSIDE = WHITE_KINGSIDE << 3,
+	// 1100
+	BLACK_BOTHSIDE  = BLACK_KINGSIDE | BLACK_QUEENSIDE,
+	// 1111
+	ANY_CASTLING = WHITE_BOTHSIDE | BLACK_BOTHSIDE
+};
+
 struct board {
 	// index squares for piece id
 	enum piece_id squares[64];
@@ -52,8 +69,8 @@ struct board {
 	u64 pieces[PIECE_MAX];
 	// color bitboards
 	u64 colors[COLOR_MAX];
-	// white kingside, white queenside, black kingside, black queenside
-	bool castling[4];
+	// castling rights
+	enum castling castling;
 };
 
 #define pieces(board, piece, color) ((board)->pieces[(piece)] & (board)->colors[(color)])
