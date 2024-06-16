@@ -83,9 +83,10 @@ int santogenc(char *text, struct movegenc *conf, enum color color)
 	if (short_castle || long_castle) {
 		conf->movetype = CASTLE;
 		conf->piece    = KING;
-		conf->target   = (short_castle) ? a1 : h1;
+		conf->target   = (short_castle) ? h1 : a1;
 		// flip sides if black
 		conf->target  += (color * a8);
+		conf->target   = square_bb(conf->target);
 		return -1;
 	}
 
@@ -130,7 +131,8 @@ static bool disambiguate(int disamb, int from)
 	    || disamb == (from / 8);
 }
 
-static bool find_move(struct board *board, struct movegenc *conf, int disamb, struct move *move)
+static bool find_move(struct board *board, struct movegenc *conf, int disamb,
+		      struct move *move)
 {
 	struct movelist ARRAY(moves);
 	generate_moves(board, &moves, conf);
