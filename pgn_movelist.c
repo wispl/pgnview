@@ -129,7 +129,6 @@ static bool find_move(struct board *board, struct movegenc *conf, int disamb, st
 	generate_moves(board, &moves, conf);
 
 	if (moves.len == 1) {
-		// move = &array_get(&moves, struct move, 0);
 		memcpy(move, &array_get(&moves, 0), sizeof(struct move));
 		array_free(&moves);
 		return true;
@@ -141,7 +140,7 @@ static bool find_move(struct board *board, struct movegenc *conf, int disamb, st
 			     (disamb < 8 && (disamb == (m.from & 7))) ||
 			     (disamb == m.from / 8);
 		if (match) {
-			move = &m;
+			memcpy(move, &m, sizeof(struct move));
 			array_free(&moves);
 			return true;
 		}
