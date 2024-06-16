@@ -4,6 +4,7 @@
 
 #include <assert.h>
 #include <string.h>
+#include <stdbool.h>
 
 enum lineattacks {
 	DIAGONAL,	
@@ -112,7 +113,8 @@ static u64 attacks_bb(int square, u64 occupied, enum piece piece)
 }
 
 // TODO: handle en passant
-static void generate_pawn_moves(struct board *board, struct movelist *moves, struct movegenc *conf)
+static void generate_pawn_moves(struct board *board, struct movelist *moves,
+				struct movegenc *conf)
 {
 	enum movetype movetype = conf->movetype;
 	enum color color = conf->color;
@@ -188,6 +190,28 @@ static void generate_pawn_moves(struct board *board, struct movelist *moves, str
 	}
 }
 
+static u64 h_ray(int square, u64 occupied, bool is_negative)
+{
+	return (is_negative) ? neg_ray_attacks(square, occupied, HORIZONTAL)
+	                     : pos_ray_attacks(square, occupied, HORIZONTAL);
+}
+
+// TODO: check for attacks on squares between rook and king
+static void generate_castle_moves(struct board *board, struct movelist *moves,
+				  struct movegenc *conf)
+{
+	u64 king = (conf->color == WHITE) ? e1 : e8;
+	for (int i = 0; i < 2; ++i) {
+		if (can_castle(board, conf->color, i)) {
+			u64 bb = h_ray(king, board->pieces[ALL], i) & conf->target;
+			if (bb) {
+				add_move(moves, CASTLE, king, pop_lsb(&bb));
+				// TODO: check if bb = 0, it should be
+			}
+		}
+	}
+}
+
 void generate_moves(struct board *board, struct movelist *moves, struct movegenc *conf)
 {
 	if (conf->piece == PAWN) {
@@ -195,19 +219,8 @@ void generate_moves(struct board *board, struct movelist *moves, struct movegenc
 		return;
 	}
 
-	// TODO: check for blockers when castling
 	if (conf->movetype == CASTLE) {
-		// king square
-		int king  = (conf->color == WHITE) ? e1 : e8;
-		// leftmost square of rooks row
-		int rook = (conf->color == WHITE) ? a1 : a8;
-
-		if (can_castle_short(board, conf->color)) {
-			add_move(moves, CASTLE, king, rook);
-		}
-		if (can_castle_long(board, conf->color)) {
-			add_move(moves, CASTLE, king, rook + 7);
-		}
+		generate_castle_moves(board, moves, conf);
 		return;
 	}
 
