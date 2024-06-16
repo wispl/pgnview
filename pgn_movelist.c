@@ -74,16 +74,19 @@ static int extract_san(char *text, int len, struct movegenc *conf)
 	return -1;
 }
 
-int santogenc(char *text, struct movegenc *conf)
+int santogenc(char *text, struct movegenc *conf, enum color color)
 {
-	if (strcmp(text, "O-O-O") == 0) {
-		// TODO
-		return KING;
-	}
+	conf->color = color;
 
-	if (strcmp(text, "O-O") == 0) {
-		// TODO
-		return KING;
+	bool short_castle = (strcmp(text, "0-0") == 0);
+	bool long_castle  = (strcmp(text, "0-0-0") == 0);
+	if (short_castle || long_castle) {
+		conf->movetype = CASTLE;
+		conf->piece    = KING;
+		conf->target   = (short_castle) ? a1 : h1;
+		// flip sides if black
+		conf->target  += (color * a8);
+		return -1;
 	}
 
 	// captures
@@ -150,8 +153,8 @@ void pgn_movelist(struct pgn_movelist *pgn_moves, struct movelist *moves)
 	struct move move;
 	for (int i = 0; i < pgn_moves->len; ++i) {
 		struct pgn_move pgn_move = array_get(pgn_moves, i);
-		conf.color = (i & 1);
-		int disamb = santogenc(pgn_move.text, &conf);
+		// white moves are even and black moves are odd, based on index
+		int disamb = santogenc(pgn_move.text, &conf, (i & 1));
 		bool found = find_move(&board, &conf, disamb, &move);
 
 		if (found) {
