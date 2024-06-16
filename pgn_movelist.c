@@ -89,12 +89,18 @@ int santogenc(char *text, struct movegenc *conf, enum color color)
 		return -1;
 	}
 
+	int len = strlen(text);
+
+	// checks and mates
+	char end = text[len - 1];
+	if (end == '+' || end == '#') {
+		--len;
+	}
+
 	// captures
 	char* x_start  = strchr(text, 'x');
 	// promotions
 	char* eq_start = strchr(text, '=');
-
-	int len = strlen(text);
 
 	if (eq_start) {
 		len -= 2;
