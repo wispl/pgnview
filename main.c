@@ -88,9 +88,10 @@ int main(int argc, char **argv)
 	int result;
 	int curr = 0;
 
+	draw_board(&board);
+	tb_present();
+
 	while (running) {
-		draw_board(&board);
-		tb_present();
 		result = tb_poll_event(&event);
 		if (result != TB_OK) {
 			if (result == TB_ERR_POLL && tb_last_errno() == EINTR) {
@@ -106,9 +107,10 @@ int main(int argc, char **argv)
 			}
 			if (event.key == TB_KEY_ARROW_RIGHT) {
 				if (curr < moves.len) {
-					// tb_printf(0, 0, 0, 0, "%d", curr);
 					board_move(&board, &array_get(&moves, curr));
 					++curr;
+					draw_board(&board);
+					tb_present();
 				}
 			}
 			break;
