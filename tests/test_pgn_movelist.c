@@ -42,7 +42,7 @@ void test_pgn_movelist(char *file, char* orig[], char* to[])
 		if (strchr(orig[i], 'x')) {
 			assert(move.movetype == CAPTURE && "Wrong movetype");
 		}
-		// assert((move.to == santoi(to[i])) && "To square mismatch");
+		assert((move.to == santoi(to[i])) && "To square mismatch");
 	}
 
 	array_free(&moves);
