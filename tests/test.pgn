@@ -1,0 +1,19 @@
+[Event "Casual Classical game"]
+[Site "https://lichess.org/nvtiBwGP"]
+[Date "2023.07.20"]
+[White "Anonymous"]
+[Black "Anonymous"]
+[Result "1-0"]
+[UTCDate "2023.07.20"]
+[UTCTime "15:38:18"]
+[WhiteElo "?"]
+[BlackElo "?"]
+[Variant "Standard"]
+[TimeControl "10800+180"]
+[ECO "C41"]
+[Opening "Philidor Defense: Exchange Variation"]
+[Termination "Normal"]
+
+1. e4 e5 2. Nf3 d6 3. d4 exd4 4. Nxd4 Nc6 5. Nc3 a6 6. Bc4 h6 7. O-O Nge7 8. Be3 Ng6 9. Qf3 Nce5 10. Qe2 Nxc4 11. Qxc4 Ne5 12. Qe2 Bd7 13. h3 Qc8 14. f4 Ng6 15. f5 Ne5 16. Nf3 Be7 17. Nxe5 dxe5 18. Qg4 Kf8 19. Rad1 Bf6 20. Bc5+ Kg8 21. Nd5 b6 22. Nxf6# 1-0
+
+
