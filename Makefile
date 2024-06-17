@@ -1,15 +1,14 @@
 CC = cc
 CFLAGS += -Wextra -Wall -Wdouble-promotion -g3 -fsanitize=undefined,address
 LDFLAGS += -fsanitize=undefined,address
-OBJECTS = parser.o movegen.o pgn_movelist.o bitboard.o board.o termbox2.o
+
+NO_GUI = parser.o movegen.o pgn_movelist.o bitboard.o board.o
+OBJECTS = $(NO_GUI) termbox2.o
+
+TESTS := $(wildcard tests/test_*.c)
 
 pgncat: $(OBJECTS) main.c
 	$(CC) -o pgncat main.c $(OBJECTS) $(LDFLAGS)
-
-# TODO: better testing
-test: $(OBJECTS) tests/test.c
-	$(CC) -o test tests/test.c $(OBJECTS) $(LDFLAGS)
-# test.o: parser.h pgn_movelist.h movegen.h bitboard.h array.h move.h
 
 parser.o: parser.h array.h
 pgn_movelist.o: pgn_movelist.h array.h bitboard.h movegen.h move.h
@@ -18,6 +17,15 @@ board.o: board.h bitboard.h move.h
 bitboard.o: bitboard.h
 termbox2.o: termbox2.h
 
-.Phony: clean
+.Phony: clean test $(TESTS)
+
 clean:
-	rm -f pgncat test $(OBJECTS)
+	rm -f pgncat test_* $(OBJECTS)
+
+test: $(TESTS)
+
+# TODO: use something else besides running and scanning for assertions
+# TODO: cache results? keep executable around?
+$(TESTS): tests/test_%.c: pgn_movelist.h array.h bitboard.h movegen.h move.h
+	$(CC) $@ -o $(basename $(notdir $@)) $(NO_GUI) $(LDFLAGS)
+	./$(basename $(notdir $@))
