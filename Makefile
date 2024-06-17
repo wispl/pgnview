@@ -17,5 +17,7 @@ movegen.o: movegen.h board.h array.h move.h
 board.o: board.h bitboard.h move.h
 bitboard.o: bitboard.h
 termbox2.o: termbox2.h
+
+.Phony: clean
 clean:
 	rm -f pgncat test $(OBJECTS)
