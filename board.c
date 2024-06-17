@@ -2,6 +2,7 @@
 
 #include "bitboard.h"
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -107,10 +108,12 @@ void board_move(struct board *board, struct move *move)
 		board_del_piece(board, move->to);
 		board_move_piece(board, move->from, move->to);
 	} else if (move->movetype == CASTLE) {
-	    	enum piece_id rook = board->squares[move->to];
-		board_del_piece(board, move->to);
-		board_move_piece(board, move->from, move->to);
-		board_put_piece(board, move->from, rook);
+		bool kingside = move->to > move->from;
+		int king = move->from + ((kingside) ?  2 : -2);
+		int rook = move->to   + ((kingside) ? -2 :  3);
+
+		board_move_piece(board, move->from, king);
+		board_move_piece(board, move->to,   rook);
 	}
 }
 
