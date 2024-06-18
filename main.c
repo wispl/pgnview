@@ -13,15 +13,15 @@
 #define CELLH  2
 
 #define SQUARES 64
-#define ROWS    (8 * CELLW)
-#define COLS    (8 * CELLH)
+#define ROWS    (8 * CELLH)
+#define COLS    (8 * CELLW)
 
 // Upper left corner of board
-#define LEFTX  (tb_width() / 2) - (ROWS / 2)
+#define LEFTX  (tb_width() / 2) - (COLS / 2)
 #define LEFTY  4
 // Bottom right corner of board
-#define RIGHTX (LEFTX + ROWS / 2)
-#define RIGHTY (LEFTY + COLS)
+#define RIGHTX (LEFTX + COLS)
+#define RIGHTY (LEFTY + ROWS)
 
 // Converts bitboard coordinates to UI coordinates for termbox
 #define ui_x(x) ((x & 7) * CELLW + LEFTX)
