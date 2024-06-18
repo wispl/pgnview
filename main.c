@@ -130,6 +130,22 @@ void prev_move(struct board *board, struct move *move, struct plystack *ply)
 	tb_present();
 }
 
+void draw_moves(struct pgn_movelist *moves)
+{
+	tb_printf(0, 0, 0, 0, "%d %d", LEFTX, RIGHTX);
+	int x = RIGHTX + CELLW;
+	int y = LEFTY  + 2;
+
+	for (int i = 0; i < moves->len, y < RIGHTY; ++i) {
+		tb_printf(x, y, 0, 0, "%s", array_get(moves, i).text);
+		x += 10;
+		if (i & 1) {
+			y += 2;
+			x = RIGHTX + CELLW;
+		}
+	}
+}
+
 int main(int argc, char **argv)
 {
 	init_lineattacks_table();
@@ -152,6 +168,7 @@ int main(int argc, char **argv)
 	int curr = 0;
 
 	draw_board(&board);
+	draw_moves(&pgn.moves);
 	tb_present();
 
 	while (running) {
