@@ -1,5 +1,6 @@
 #include "array.h"
 #include "board.h"
+#include "move.h"
 #include "parser.h"
 #include "pgn_movelist.h"
 
@@ -21,6 +22,11 @@
 #define RIGHTX (LEFTX + ROWS / 2)
 #define RIGHTY (LEFTY + COLS)
 
+// Converts bitboard coordinates to UI coordinates for termbox
+#define ui_x(x) ((x & 7) * CELLW + LEFTX)
+// Board is flipped due to bitboard
+#define ui_y(y) (((63 - y) / 8) * CELLH + LEFTY)
+
 static const char piece_str[PIECE_ID_MAX] = {
 	[W_KING]   = 'K',
 	[W_QUEEN]  = 'Q',
@@ -39,11 +45,12 @@ static const char piece_str[PIECE_ID_MAX] = {
 
 void draw_square(int x, int y, char ch, uintattr_t fg, uintattr_t bg)
 {
-	tb_print(x, y,     bg, fg, "▄▄▄▄▄");
+	tb_print( x, y,     bg, fg, "▄▄▄▄▄");
 	tb_printf(x, y + 1, fg, bg, "  %c  ", ch);
-	tb_print(x, y + 2, bg,  0, "▀▀▀▀▀");
+	tb_print( x, y + 2, bg,  0, "▀▀▀▀▀");
 }
 
+// TODO: investigate not drawing the whole board but only changes
 void draw_board(struct board *board)
 {
 	int x = LEFTX;
@@ -52,8 +59,8 @@ void draw_board(struct board *board)
 	for (int rank = 7; rank >= 0; --rank) {
 		for (int file = 0; file < 8; ++file) {
 			int square = rank * 8 + file;
-			enum piece_id piece = board->squares[square];
-			char ch = piece_str[piece];
+			enum piece_id id = board->squares[square];
+			char ch = piece_str[id];
 			if ((file + shift) & 1) {
 				draw_square(x, y, ch, TB_GREEN, TB_BLACK);
 			} else {
@@ -66,6 +73,19 @@ void draw_board(struct board *board)
 		x = LEFTX;
 		y += CELLH;
 	}
+}
+
+void highlight_square(int square)
+{
+	int x = ui_x(square);
+	int y = ui_y(square);
+	struct tb_cell cell = tb_cell_buffer()[(y + 1) * tb_width() + (x + 2)];
+	char ch[7];
+	tb_utf8_unicode_to_char(ch, cell.ch);
+
+	tb_print( x, y,     TB_YELLOW,   cell.fg, "▄▄▄▄▄");
+	tb_printf(x, y + 1, TB_BLACK,  TB_YELLOW, "  %s  ", ch);
+	tb_print( x, y + 2, TB_YELLOW,   cell.fg, "▀▀▀▀▀");
 }
 
 int main(int argc, char **argv)
@@ -107,10 +127,16 @@ int main(int argc, char **argv)
 			}
 			if (event.key == TB_KEY_ARROW_RIGHT) {
 				if (curr < moves.len) {
-					board_move(&board, &array_get(&moves, curr));
-					++curr;
+					struct move move = array_get(&moves, curr);
+					board_move(&board, &move);
+
 					draw_board(&board);
 					tb_present();
+					highlight_square(move.from);
+					highlight_square(move.to);
+
+					tb_present();
+					++curr;
 				}
 			}
 			break;
