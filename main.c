@@ -6,8 +6,8 @@
 
 #include "termbox2.h"
 
-#include <stdio.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 #define CELLW  5
 #define CELLH  2
@@ -16,9 +16,10 @@
 #define ROWS    (8 * CELLW)
 #define COLS    (8 * CELLH)
 
+// Upper left corner of board
 #define LEFTX  (tb_width() / 2) - (ROWS / 2)
 #define LEFTY  4
-
+// Bottom right corner of board
 #define RIGHTX (LEFTX + ROWS / 2)
 #define RIGHTY (LEFTY + COLS)
 
@@ -26,6 +27,9 @@
 #define ui_x(x) ((x & 7) * CELLW + LEFTX)
 // Board is flipped due to bitboard
 #define ui_y(y) (((63 - y) / 8) * CELLH + LEFTY)
+
+// Used to access the backbuffer for termbox
+#define tb_coord(x, y) ((y) * tb_width() + (x))
 
 static char* piece_str[PIECE_ID_MAX] = {
 	[W_KING]   = "K",
@@ -46,12 +50,24 @@ static char* piece_str[PIECE_ID_MAX] = {
 void draw_square(int x, int y, char *str, uintattr_t fg, uintattr_t bg)
 {
 	// sample top and bottom squares to blending them
-	struct tb_cell up = tb_cell_buffer()[(y - 1) * tb_width() + x];
-	struct tb_cell down = tb_cell_buffer()[(y + CELLH + 1) * tb_width() + x];
+	struct tb_cell up = tb_cell_buffer()[tb_coord(x, y - 1)];
+	struct tb_cell down = tb_cell_buffer()[tb_coord(x, y + CELLH + 1)];
 
 	tb_print( x, y,     bg,    up.bg, "▄▄▄▄▄");
 	tb_printf(x, y + 1, fg,       bg, "  %s  ", str);
 	tb_print( x, y + 2, bg,  down.bg, "▀▀▀▀▀");
+}
+
+void highlight_square(int square)
+{
+	int x = ui_x(square);
+	int y = ui_y(square);
+
+	struct tb_cell cell = tb_cell_buffer()[tb_coord(x + 2, y + 1)];
+	char ch[7];
+	tb_utf8_unicode_to_char(ch, cell.ch);
+
+	draw_square(x, y, ch, TB_BLACK, TB_YELLOW);
 }
 
 // TODO: investigate not drawing the whole board but only changes
@@ -77,18 +93,6 @@ void draw_board(struct board *board)
 		x = LEFTX;
 		y += CELLH;
 	}
-}
-
-void highlight_square(int square)
-{
-	int x = ui_x(square);
-	int y = ui_y(square);
-
-	struct tb_cell cell = tb_cell_buffer()[(y + 1) * tb_width() + (x + 2)];
-	char ch[7];
-	tb_utf8_unicode_to_char(ch, cell.ch);
-
-	draw_square(x, y, ch, TB_BLACK, TB_YELLOW);
 }
 
 int main(int argc, char **argv)
