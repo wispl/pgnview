@@ -98,6 +98,38 @@ void draw_board(struct board *board)
 	}
 }
 
+void next_move(struct board *board, struct move *move, struct plystack *ply)
+{
+	if (move->movetype == CAPTURE) {
+		array_push(ply, board->squares[move->to]);
+	}
+	board_move(board, move);
+
+	draw_board(board);
+	tb_present();
+
+	highlight_square(move->from);
+	highlight_square(move->to);
+	tb_present();
+}
+
+void prev_move(struct board *board, struct move *move, struct plystack *ply)
+{
+	if (move->movetype == CAPTURE) {
+		board_undo_move(board, move, array_last(ply));
+		array_pop(ply);
+	} else {
+		board_undo_move(board, move, EMPTY);
+	}
+
+	draw_board(board);
+	tb_present();
+
+	highlight_square(move->from);
+	highlight_square(move->to);
+	tb_present();
+}
+
 int main(int argc, char **argv)
 {
 	init_lineattacks_table();
@@ -138,40 +170,18 @@ int main(int argc, char **argv)
 			}
 			if (event.key == TB_KEY_ARROW_RIGHT) {
 				if (curr < moves.len) {
-					struct move move = array_get(&moves, curr);
-					if (move.movetype == CAPTURE) {
-						array_push(&ply, board.squares[move.to]);
-					}
-					board_move(&board, &move);
-
-					draw_board(&board);
-					tb_present();
-					highlight_square(move.from);
-					highlight_square(move.to);
-
-					tb_present();
+					next_move(&board,
+						  &array_get(&moves, curr),
+						  &ply);
 					++curr;
 				}
 			}
 			if (event.key == TB_KEY_ARROW_LEFT) {
 				if (curr > 0) {
 					--curr;
-
-					struct move move = array_get(&moves, curr);
-					if (move.movetype == CAPTURE) {
-						enum piece_id id = array_last(&ply);
-						board_undo_move(&board, &move, id);
-						array_pop(&ply);
-					} else {
-						board_undo_move(&board, &move, EMPTY);
-					}
-
-					draw_board(&board);
-					tb_present();
-
-					highlight_square(move.from);
-					highlight_square(move.to);
-					tb_present();
+					prev_move(&board,
+						  &array_get(&moves, curr),
+						  &ply);
 				}
 			}
 			break;
