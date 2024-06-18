@@ -83,6 +83,7 @@ void board_put_piece(struct board *board, int square, enum piece_id id);
 void board_del_piece(struct board *board, int square);
 void board_move_piece(struct board *board, int from, int to);
 void board_move(struct board *board, struct move *move);
+void board_undo_move(struct board *board, struct move *move, enum piece_id captured);
 void board_print(struct board *board);
 
 #endif

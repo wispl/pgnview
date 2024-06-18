@@ -117,6 +117,23 @@ void board_move(struct board *board, struct move *move)
 	}
 }
 
+void board_undo_move(struct board *board, struct move *move, enum piece_id captured)
+{
+	if (move->movetype == QUIET) {
+		board_move_piece(board, move->to, move->from);
+	} else if (move->movetype == CAPTURE) {
+		board_move_piece(board, move->to, move->from);
+		board_put_piece(board, move->to, captured);
+	} else if (move->movetype == CASTLE) {
+		bool kingside = move->to > move->from;
+		int king = move->from + ((kingside) ?  2 : -2);
+		int rook = move->to   + ((kingside) ? -2 :  3);
+
+		board_move_piece(board, king, move->from);
+		board_move_piece(board, rook, move->to);
+	}
+}
+
 void board_print(struct board *board)
 {
 	for (int rank = 7; rank >= 0; --rank) {

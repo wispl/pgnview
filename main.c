@@ -47,6 +47,9 @@ static char* piece_str[PIECE_ID_MAX] = {
 	[EMPTY]    = " ",
 };
 
+// Stores captured pieces for unwinding
+array_define(plystack, enum piece_id);
+
 void draw_square(int x, int y, char *str, uintattr_t fg, uintattr_t bg)
 {
 	// sample top and bottom squares to blending them
@@ -106,6 +109,7 @@ int main(int argc, char **argv)
 
 	struct pgn pgn;
 	struct movelist ARRAY(moves);
+	struct plystack ARRAY(ply);
 
 	pgn_read(&pgn, "tests/test.pgn");
 	pgn_movelist(&pgn.moves, &moves);
@@ -135,6 +139,9 @@ int main(int argc, char **argv)
 			if (event.key == TB_KEY_ARROW_RIGHT) {
 				if (curr < moves.len) {
 					struct move move = array_get(&moves, curr);
+					if (move.movetype == CAPTURE) {
+						array_push(&ply, board.squares[move.to]);
+					}
 					board_move(&board, &move);
 
 					draw_board(&board);
@@ -146,12 +153,34 @@ int main(int argc, char **argv)
 					++curr;
 				}
 			}
+			if (event.key == TB_KEY_ARROW_LEFT) {
+				if (curr > 0) {
+					--curr;
+
+					struct move move = array_get(&moves, curr);
+					if (move.movetype == CAPTURE) {
+						enum piece_id id = array_last(&ply);
+						board_undo_move(&board, &move, id);
+						array_pop(&ply);
+					} else {
+						board_undo_move(&board, &move, EMPTY);
+					}
+
+					draw_board(&board);
+					tb_present();
+
+					highlight_square(move.from);
+					highlight_square(move.to);
+					tb_present();
+				}
+			}
 			break;
 		default: break;
 		}
 	}
 
 	array_free(&moves);
+	array_free(&ply);
 	pgn_free(&pgn);
 
 	tb_shutdown();
