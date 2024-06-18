@@ -27,27 +27,31 @@
 // Board is flipped due to bitboard
 #define ui_y(y) (((63 - y) / 8) * CELLH + LEFTY)
 
-static const char piece_str[PIECE_ID_MAX] = {
-	[W_KING]   = 'K',
-	[W_QUEEN]  = 'Q',
-	[W_ROOK]   = 'R',
-	[W_BISHOP] = 'B',
-	[W_KNIGHT] = 'N',
-	[W_PAWN]   = 'P',
-	[B_KING]   = 'k',
-	[B_QUEEN]  = 'q',
-	[B_ROOK]   = 'r',
-	[B_BISHOP] = 'b',
-	[B_KNIGHT] = 'n',
-	[B_PAWN]   = 'p',
-	[EMPTY]    = ' ',
+static char* piece_str[PIECE_ID_MAX] = {
+	[W_KING]   = "K",
+	[W_QUEEN]  = "Q",
+	[W_ROOK]   = "R",
+	[W_BISHOP] = "B",
+	[W_KNIGHT] = "N",
+	[W_PAWN]   = "P",
+	[B_KING]   = "k",
+	[B_QUEEN]  = "q",
+	[B_ROOK]   = "r",
+	[B_BISHOP] = "b",
+	[B_KNIGHT] = "n",
+	[B_PAWN]   = "p",
+	[EMPTY]    = " ",
 };
 
-void draw_square(int x, int y, char ch, uintattr_t fg, uintattr_t bg)
+void draw_square(int x, int y, char *str, uintattr_t fg, uintattr_t bg)
 {
-	tb_print( x, y,     bg, fg, "▄▄▄▄▄");
-	tb_printf(x, y + 1, fg, bg, "  %c  ", ch);
-	tb_print( x, y + 2, bg,  0, "▀▀▀▀▀");
+	// sample top and bottom squares to blending them
+	struct tb_cell up = tb_cell_buffer()[(y - 1) * tb_width() + x];
+	struct tb_cell down = tb_cell_buffer()[(y + CELLH + 1) * tb_width() + x];
+
+	tb_print( x, y,     bg,    up.bg, "▄▄▄▄▄");
+	tb_printf(x, y + 1, fg,       bg, "  %s  ", str);
+	tb_print( x, y + 2, bg,  down.bg, "▀▀▀▀▀");
 }
 
 // TODO: investigate not drawing the whole board but only changes
@@ -60,7 +64,7 @@ void draw_board(struct board *board)
 		for (int file = 0; file < 8; ++file) {
 			int square = rank * 8 + file;
 			enum piece_id id = board->squares[square];
-			char ch = piece_str[id];
+			char *ch = piece_str[id];
 			if ((file + shift) & 1) {
 				draw_square(x, y, ch, TB_GREEN, TB_BLACK);
 			} else {
@@ -79,13 +83,12 @@ void highlight_square(int square)
 {
 	int x = ui_x(square);
 	int y = ui_y(square);
+
 	struct tb_cell cell = tb_cell_buffer()[(y + 1) * tb_width() + (x + 2)];
 	char ch[7];
 	tb_utf8_unicode_to_char(ch, cell.ch);
 
-	tb_print( x, y,     TB_YELLOW,   cell.fg, "▄▄▄▄▄");
-	tb_printf(x, y + 1, TB_BLACK,  TB_YELLOW, "  %s  ", ch);
-	tb_print( x, y + 2, TB_YELLOW,   cell.fg, "▀▀▀▀▀");
+	draw_square(x, y, ch, TB_BLACK, TB_YELLOW);
 }
 
 int main(int argc, char **argv)
