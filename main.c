@@ -129,9 +129,13 @@ void draw_moves(struct pgn_movelist *moves, int current)
 	int x = RIGHTX + CELLW;
 	int y = LEFTY  + 2;
 
-	for (int i = 0; i < moves->len, y < RIGHTY; ++i) {
-		tb_printf(x, y, (current == i) * TB_YELLOW, 0, " %s ", array_get(moves, i).text);
-		x += 10;
+	int chunk = RIGHTY - y;
+	int start = (current < chunk) ? 0 : (current / chunk);
+
+	for (int i = start * chunk; y < RIGHTY; ++i) {
+		char *str = (i < moves->len) ? array_get(moves, i).text : " ";
+		tb_printf(x, y, (current == i) * TB_YELLOW, 0, "%-8s", str);
+		x += 2 * CELLW;
 		if (i & 1) {
 			y += 2;
 			x = RIGHTX + CELLW;
