@@ -189,7 +189,7 @@ int main(int argc, char **argv)
 			if (event.key == TB_KEY_ARROW_LEFT) {
 				if (curr > 0) {
 					--curr;
-					draw_moves(&pgn.moves, curr);
+					draw_moves(&pgn.moves, curr - 1);
 					undo_move(&board, &array_get(&moves, curr), &ply);
 					tb_present();
 				}
