@@ -89,20 +89,17 @@ void board_move_piece(struct board *board, int from, int to)
 
 void board_move(struct board *board, struct move *move)
 {
-	enum color color = piece_color(board->squares[move->from]);
-	enum piece piece = piece_type(board->squares[move->from]);
 	if (move->movetype == QUIET) {
 		board_move_piece(board, move->from, move->to);
 
-		if (piece == KING || piece == ROOK) {
-			enum castling side = ((move->from & 7) == 0) 
-				? WHITE_QUEENSIDE
-				: WHITE_KINGSIDE;
-			enum castling mask = (piece == KING)
-				? WHITE_BOTHSIDE 
-				: side;
-			int shift = color * 2;
-			board->castling &= ~((WHITE_KINGSIDE & mask) << shift);
+		enum color color = piece_color(board->squares[move->from]);
+		enum piece piece = piece_type(board->squares[move->from]);
+
+		if (piece == KING) {
+			board->castling &= ~(WHITE_BOTHSIDE << (color * 2));
+		} else if (piece == ROOK) {
+			enum castling mask = (move->from < move->to) ? QUEENSIDE : KINGSIDE;
+			board->castling &= mask & color;
 		}
 	} else if (move->movetype == CAPTURE) {
 		board_del_piece(board, move->to);
