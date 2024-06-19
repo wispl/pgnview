@@ -98,7 +98,7 @@ void draw_board(struct board *board)
 	}
 }
 
-void next_move(struct board *board, struct move *move, struct plystack *ply)
+void do_move(struct board *board, struct move *move, struct plystack *ply)
 {
 	if (move->movetype == CAPTURE) {
 		array_push(ply, board->squares[move->to]);
@@ -106,14 +106,11 @@ void next_move(struct board *board, struct move *move, struct plystack *ply)
 	board_move(board, move);
 
 	draw_board(board);
-	tb_present();
-
 	highlight_square(move->from);
 	highlight_square(move->to);
-	tb_present();
 }
 
-void prev_move(struct board *board, struct move *move, struct plystack *ply)
+void undo_move(struct board *board, struct move *move, struct plystack *ply)
 {
 	if (move->movetype == CAPTURE) {
 		board_undo_move(board, move, array_last(ply));
@@ -123,21 +120,17 @@ void prev_move(struct board *board, struct move *move, struct plystack *ply)
 	}
 
 	draw_board(board);
-	tb_present();
-
 	highlight_square(move->from);
 	highlight_square(move->to);
-	tb_present();
 }
 
-void draw_moves(struct pgn_movelist *moves)
+void draw_moves(struct pgn_movelist *moves, int current)
 {
-	tb_printf(0, 0, 0, 0, "%d %d", LEFTX, RIGHTX);
 	int x = RIGHTX + CELLW;
 	int y = LEFTY  + 2;
 
 	for (int i = 0; i < moves->len, y < RIGHTY; ++i) {
-		tb_printf(x, y, 0, 0, "%s", array_get(moves, i).text);
+		tb_printf(x, y, (current == i) * TB_YELLOW, 0, " %s ", array_get(moves, i).text);
 		x += 10;
 		if (i & 1) {
 			y += 2;
@@ -168,7 +161,7 @@ int main(int argc, char **argv)
 	int curr = 0;
 
 	draw_board(&board);
-	draw_moves(&pgn.moves);
+	draw_moves(&pgn.moves, -1);
 	tb_present();
 
 	while (running) {
@@ -187,18 +180,18 @@ int main(int argc, char **argv)
 			}
 			if (event.key == TB_KEY_ARROW_RIGHT) {
 				if (curr < moves.len) {
-					next_move(&board,
-						  &array_get(&moves, curr),
-						  &ply);
+					draw_moves(&pgn.moves, curr);
+					do_move(&board, &array_get(&moves, curr), &ply);
 					++curr;
+					tb_present();
 				}
 			}
 			if (event.key == TB_KEY_ARROW_LEFT) {
 				if (curr > 0) {
 					--curr;
-					prev_move(&board,
-						  &array_get(&moves, curr),
-						  &ply);
+					draw_moves(&pgn.moves, curr);
+					undo_move(&board, &array_get(&moves, curr), &ply);
+					tb_present();
 				}
 			}
 			break;
