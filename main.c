@@ -52,13 +52,13 @@ array_define(plystack, enum piece_id);
 
 void draw_square(int x, int y, char *str, uintattr_t fg, uintattr_t bg)
 {
-	// sample top and bottom squares to blending them
+	// sample top and bottom squares to blend them
 	struct tb_cell up = tb_cell_buffer()[tb_coord(x, y - 1)];
 	struct tb_cell down = tb_cell_buffer()[tb_coord(x, y + CELLH + 1)];
 
-	tb_print( x, y,     bg,    up.bg, "▄▄▄▄▄");
-	tb_printf(x, y + 1, fg,       bg, "  %s  ", str);
-	tb_print( x, y + 2, bg,  down.bg, "▀▀▀▀▀");
+	tb_print( x, y,     bg,   up.bg, "▄▄▄▄▄");
+	tb_printf(x, y + 1, fg,      bg, "  %s  ", str);
+	tb_print( x, y + 2, bg, down.bg, "▀▀▀▀▀");
 }
 
 void highlight_square(int square)
