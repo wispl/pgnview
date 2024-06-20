@@ -135,7 +135,7 @@ void draw_moves(struct pgn_movelist *moves, int current)
 	for (int i = start * chunk; y < RIGHTY; ++i) {
 		char *str = (i < moves->len) ? array_get(moves, i).text : " ";
 		tb_printf(x, y, (current == i) * TB_YELLOW, 0, "%-8s", str);
-		x += 2 * CELLW;
+		x += 8;
 		if (i & 1) {
 			y += 2;
 			x = RIGHTX + CELLW;
@@ -178,6 +178,12 @@ int main(int argc, char **argv)
 		}
 
 		switch (event.type) {
+		case TB_EVENT_RESIZE:
+			tb_clear();
+			draw_board(&board);
+			draw_moves(&pgn.moves, curr);
+			tb_present();
+			break;
 		case TB_EVENT_KEY:
 			if (event.ch == 'q') {
 				running = false;
