@@ -185,19 +185,29 @@ int main(int argc, char **argv)
 			if (event.key == TB_KEY_ARROW_RIGHT) {
 				if (curr < moves.len - 1) {
 					++curr;
-					draw_moves(&pgn.moves, curr);
 					do_move(&board, &array_get(&moves, curr), &ply);
-					tb_present();
 				}
 			}
 			if (event.key == TB_KEY_ARROW_LEFT) {
 				if (curr > -1) {
-					draw_moves(&pgn.moves, curr - 1);
 					undo_move(&board, &array_get(&moves, curr), &ply);
-					tb_present();
 					--curr;
 				}
 			}
+			if (event.key == TB_KEY_ARROW_UP) {
+				while (curr != -1) {
+					undo_move(&board, &array_get(&moves, curr), &ply);
+					--curr;
+				}
+			}
+			if (event.key == TB_KEY_ARROW_DOWN) {
+				while (curr != moves.len - 1) {
+					++curr;
+					do_move(&board, &array_get(&moves, curr), &ply);
+				}
+			}
+			draw_moves(&pgn.moves, curr);
+			tb_present();
 			break;
 		default: break;
 		}
