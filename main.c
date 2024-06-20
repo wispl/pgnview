@@ -145,6 +145,11 @@ void draw_moves(struct pgn_movelist *moves, int current)
 
 int main(int argc, char **argv)
 {
+	if (argc < 2) {
+		printf("Please specify a file!\n");
+		return 0;
+	}
+
 	init_lineattacks_table();
 	tb_init();
 	tb_hide_cursor();
@@ -156,7 +161,7 @@ int main(int argc, char **argv)
 	struct movelist ARRAY(moves);
 	struct plystack ARRAY(ply);
 
-	pgn_read(&pgn, "tests/test.pgn");
+	pgn_read(&pgn, argv[1]);
 	pgn_movelist(&pgn.moves, &moves);
 
 	bool running = true;
@@ -224,4 +229,5 @@ int main(int argc, char **argv)
 	pgn_free(&pgn);
 
 	tb_shutdown();
+	return 1;
 }
