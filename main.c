@@ -162,10 +162,10 @@ int main(int argc, char **argv)
 	bool running = true;
 	struct tb_event event;
 	int result;
-	int curr = 0;
+	int curr = -1;
 
 	draw_board(&board);
-	draw_moves(&pgn.moves, -1);
+	draw_moves(&pgn.moves, curr);
 	tb_present();
 
 	while (running) {
@@ -183,19 +183,19 @@ int main(int argc, char **argv)
 				running = false;
 			}
 			if (event.key == TB_KEY_ARROW_RIGHT) {
-				if (curr < moves.len) {
+				if (curr < moves.len - 1) {
+					++curr;
 					draw_moves(&pgn.moves, curr);
 					do_move(&board, &array_get(&moves, curr), &ply);
-					++curr;
 					tb_present();
 				}
 			}
 			if (event.key == TB_KEY_ARROW_LEFT) {
-				if (curr > 0) {
-					--curr;
+				if (curr > -1) {
 					draw_moves(&pgn.moves, curr - 1);
 					undo_move(&board, &array_get(&moves, curr), &ply);
 					tb_present();
+					--curr;
 				}
 			}
 			break;
