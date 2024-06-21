@@ -133,12 +133,25 @@ void draw_moves(struct pgn_movelist *moves, int current)
 	int start = (current < chunk) ? 0 : (current / chunk);
 
 	for (int i = start * chunk; y < RIGHTY; ++i) {
+		// number indicator at white moves (even index)
+		if (!(i & 1)) {
+			// supports up to 3 digit amount of moves
+			if (i < moves->len) {
+				tb_printf(x, y, 0, 0, "%-4d", (i / 2) + 1);
+			} else {
+				tb_printf(x, y, 0, 0, "%4s", " ");
+			}
+			x += 4;
+		}
+
 		char *str = (i < moves->len) ? array_get(moves, i).text : " ";
 		tb_printf(x, y, (current == i) * TB_YELLOW, 0, "%-8s", str);
 		x += 8;
+
+		// newline at black moves (odd index)
 		if (i & 1) {
-			y += 2;
-			x = RIGHTX + CELLW;
+			y += CELLH;
+			x  = RIGHTX + CELLW;
 		}
 	}
 }
