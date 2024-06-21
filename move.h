@@ -1,8 +1,6 @@
 #ifndef MOVE_H
 #define MOVE_H
 
-#include "array.h"
-
 enum movetype {
 	QUIET,        // movement only, no material is altered
 	CAPTURE,      // material is decreased for opposing side
@@ -15,7 +13,5 @@ struct move {
 	int from;
 	int to;
 };
-
-array_define(movelist, struct move);
 
 #endif
