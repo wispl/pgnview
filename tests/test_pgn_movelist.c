@@ -1,4 +1,5 @@
 #include "../array.h"
+#include "../movegen.h"
 #include "../parser.h"
 #include "../pgn_movelist.h"
 
@@ -26,31 +27,31 @@ static inline int santoi(char *san)
 // enough to determine correctless as it isolates error to disambiguation code.
 void test_pgn_movelist(char *file, char* orig[], char* to[])
 {
-	init_lineattacks_table();
 	struct pgn pgn;
-	struct movelist ARRAY(moves);
-
 	pgn_read(&pgn, file);
-	pgn_movelist(&pgn.moves, &moves);
 
-	assert(pgn.moves.len == moves.len && "Moves ommited");
+	struct move *moves = malloc(sizeof(moves[0]) * pgn.moves.len);
+	int moves_len = pgn_to_moves(&pgn.moves, moves);
+
+	assert(pgn.moves.len == moves_len && "Moves ommited");
 
 	// TODO: expand, promotion, castle, etc..
 	struct move move;
-	for (int i = 0; i < moves.len; ++i) {
-		move = array_get(&moves, i);
+	for (int i = 0; i < moves_len; ++i) {
+		move = moves[i];
 		if (strchr(orig[i], 'x')) {
 			assert(move.movetype == CAPTURE && "Wrong movetype");
 		}
 		assert((move.to == santoi(to[i])) && "To square mismatch");
 	}
 
-	array_free(&moves);
+	free(moves);
 	pgn_free(&pgn);
 }
 
 int main(void)
 {
+	init_lineattacks_table();
 	char *orig[] = {
 		"e4", "e5", "Nf3", "d6", "d4", "exd4", "Nxd4", "Nc6", "Nc3", "a6",
 		"Bc4", "h6", "O-O", "Nge7", "Be3", "Ng6", "Qf3", "Nce5", "Qe2", "Nxc4",

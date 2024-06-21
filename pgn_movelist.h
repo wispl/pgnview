@@ -2,9 +2,11 @@
 #define PGN_MOVELIST_H
 
 #include "move.h"
-#include "movegen.h"
 #include "parser.h"
 
-void pgn_movelist(struct pgn_movelist *pgn_moves, struct movelist *movelist);
+// Converts a list of "struct pgn_move" to a list of "struct move", "moves"
+// must be large enough! (>= pgn_moves.len).
+// Returns the number of moves filled.
+int pgn_to_moves(const struct pgn_movelist *pgn_moves, struct move *moves);
 
 #endif

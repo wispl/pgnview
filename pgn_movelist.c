@@ -153,8 +153,9 @@ static bool find_move(struct board *board, struct movegenc *conf, int disamb,
 	return false;
 }
 
-void pgn_movelist(struct pgn_movelist *pgn_moves, struct movelist *moves)
+int pgn_to_moves(const struct pgn_movelist *pgn_moves, struct move *moves)
 {
+	int n = 0;
 	struct board board;
 	board_init(&board);
 
@@ -167,8 +168,10 @@ void pgn_movelist(struct pgn_movelist *pgn_moves, struct movelist *moves)
 		bool found = find_move(&board, &conf, disamb, &move);
 
 		if (found) {
-			array_push(moves, move);
+			++n;
+			moves[i] = move;
 			board_move(&board, &move);
 		}
 	}
+	return n;
 }

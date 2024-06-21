@@ -1,6 +1,7 @@
 #include "array.h"
 #include "board.h"
 #include "move.h"
+#include "movegen.h"
 #include "parser.h"
 #include "pgn_movelist.h"
 
@@ -171,11 +172,11 @@ int main(int argc, char **argv)
 	board_init(&board);
 
 	struct pgn pgn;
-	struct movelist ARRAY(moves);
 	struct plystack ARRAY(ply);
 
 	pgn_read(&pgn, argv[1]);
-	pgn_movelist(&pgn.moves, &moves);
+	struct move *moves = malloc(sizeof(moves[0]) * pgn.moves.len);
+	int moves_len = pgn_to_moves(&pgn.moves, moves);
 
 	bool running = true;
 	struct tb_event event;
@@ -207,27 +208,27 @@ int main(int argc, char **argv)
 				running = false;
 			}
 			if (event.key == TB_KEY_ARROW_RIGHT) {
-				if (curr < moves.len - 1) {
+				if (curr < moves_len - 1) {
 					++curr;
-					do_move(&board, &array_get(&moves, curr), &ply);
+					do_move(&board, &moves[curr], &ply);
 				}
 			}
 			if (event.key == TB_KEY_ARROW_LEFT) {
 				if (curr > -1) {
-					undo_move(&board, &array_get(&moves, curr), &ply);
+					undo_move(&board, &moves[curr], &ply);
 					--curr;
 				}
 			}
 			if (event.key == TB_KEY_ARROW_UP) {
 				while (curr != -1) {
-					undo_move(&board, &array_get(&moves, curr), &ply);
+					undo_move(&board, &moves[curr], &ply);
 					--curr;
 				}
 			}
 			if (event.key == TB_KEY_ARROW_DOWN) {
-				while (curr != moves.len - 1) {
+				while (curr != moves_len - 1) {
 					++curr;
-					do_move(&board, &array_get(&moves, curr), &ply);
+					do_move(&board, &moves[curr], &ply);
 				}
 			}
 			draw_moves(&pgn.moves, curr);
@@ -237,8 +238,8 @@ int main(int argc, char **argv)
 		}
 	}
 
-	array_free(&moves);
 	array_free(&ply);
+	free(moves);
 	pgn_free(&pgn);
 
 	tb_shutdown();
