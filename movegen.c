@@ -1,7 +1,5 @@
 #include "movegen.h"
 
-#include "array.h"
-
 #include <assert.h>
 #include <string.h>
 #include <stdbool.h>
@@ -43,13 +41,13 @@ static u64 neg_ray_attacks(int square, u64 occupied, enum lineattacks type)
 	return attacks ^ neg_ray(lineattacks[type][blocker], blocker);
 }
 
-static void add_move(struct movelist *moves, enum movetype movetype, int from, int to)
+static struct move make_move(enum movetype movetype, int from, int to)
 {
-	array_push(moves, ((struct move) {
+	return (struct move) {
 		.movetype = movetype,
 		.from = from,
 		.to = to
-	}));
+	};
 }
 
 static u64 knight_attacks_bb(int square)
@@ -113,8 +111,8 @@ static u64 attacks_bb(int square, u64 occupied, enum piece piece)
 }
 
 // TODO: handle en passant
-static void generate_pawn_moves(struct board *board, struct movelist *moves,
-				struct movegenc *conf)
+static struct move* generate_pawn_moves(struct board *board, struct move *moves,
+		                        struct movegenc *conf)
 {
 	enum movetype movetype = conf->movetype;
 	enum color color = conf->color;
@@ -144,11 +142,11 @@ static void generate_pawn_moves(struct board *board, struct movelist *moves,
 		
 		while (b1) {
 			int to = pop_lsb(&b1);
-			add_move(moves, QUIET, to - up, to);
+			*moves++ = make_move(QUIET, to - up, to);
 		}
 		while (b2) {
 			int to = pop_lsb(&b2);
-			add_move(moves, QUIET, to - up - up, to);
+			*moves++ = make_move(QUIET, to - up - up, to);
 		}
 	} else if (movetype == PROMOTION) {
 		u64 b1 = shift(rank7_pawns, up_right) & enemies;
@@ -160,17 +158,17 @@ static void generate_pawn_moves(struct board *board, struct movelist *moves,
 
 		while (b1) {
 			int to = pop_lsb(&b1);
-			add_move(moves, PROMOTION, to - up_right , to);
+			*moves++ = make_move(PROMOTION, to - up_right, to);
 		}
 
 		while (b2) {
 			int to = pop_lsb(&b2);
-			add_move(moves, PROMOTION, to - up_left, to);
+			*moves++ = make_move(PROMOTION, to - up_left, to);
 		}
 
 		while (b3) {
 			int to = pop_lsb(&b3);
-			add_move(moves, PROMOTION, to - up, to);
+			*moves++ = make_move(PROMOTION, to - up, to);
 		}
 	} else if (movetype == CAPTURE) {
 		// regular captures
@@ -181,13 +179,14 @@ static void generate_pawn_moves(struct board *board, struct movelist *moves,
 
 		while (b1) {
 			int to = pop_lsb(&b1);
-			add_move(moves, CAPTURE, to - up_right , to);
+			*moves++ = make_move(CAPTURE, to - up_right, to);
 		}
 		while (b2) {
 			int to = pop_lsb(&b2);
-			add_move(moves, CAPTURE, to - up_left, to);
+			*moves++ = make_move(CAPTURE, to - up_left, to);
 		}
 	}
+	return moves;
 }
 
 static u64 h_ray(int square, u64 occupied, bool is_negative)
@@ -197,31 +196,30 @@ static u64 h_ray(int square, u64 occupied, bool is_negative)
 }
 
 // TODO: check for attacks on squares between rook and king
-static void generate_castle_moves(struct board *board, struct movelist *moves,
-				  struct movegenc *conf)
+static struct move* generate_castle_moves(struct board *board, struct move *moves,
+		                          struct movegenc *conf)
 {
 	u64 king = (conf->color == WHITE) ? e1 : e8;
 	for (int i = 0; i < 2; ++i) {
 		if (can_castle(board, conf->color, i)) {
 			u64 bb = h_ray(king, board->pieces[ALL], i) & conf->target;
 			if (bb) {
-				add_move(moves, CASTLE, king, pop_lsb(&bb));
+				*moves++ = make_move(CASTLE, king, pop_lsb(&bb));
 				// TODO: check if bb = 0, it should be
 			}
 		}
 	}
+	return moves;
 }
 
-void generate_moves(struct board *board, struct movelist *moves, struct movegenc *conf)
+struct move* generate_moves(struct board *board, struct move *moves, struct movegenc *conf)
 {
 	if (conf->piece == PAWN) {
-		generate_pawn_moves(board, moves, conf);
-		return;
+		return generate_pawn_moves(board, moves, conf);
 	}
 
 	if (conf->movetype == CASTLE) {
-		generate_castle_moves(board, moves, conf);
-		return;
+		return generate_castle_moves(board, moves, conf);
 	}
 
 	assert(conf->movetype != PROMOTION);
@@ -237,7 +235,8 @@ void generate_moves(struct board *board, struct movelist *moves, struct movegenc
 		bb &= conf->target;
 
 		while (bb) {
-			add_move(moves, conf->movetype, from, pop_lsb(&bb));
+			*moves++ = make_move(conf->movetype, from, pop_lsb(&bb));
 		}
 	}
+	return moves;
 }

@@ -134,24 +134,22 @@ static bool disambiguate(int disamb, int from)
 static bool find_move(struct board *board, struct movegenc *conf, int disamb,
 		      struct move *move)
 {
-	struct movelist ARRAY(moves);
-	generate_moves(board, &moves, conf);
+	struct move moves[256];
+	struct move *last = generate_moves(board, moves, conf);
+	int len = last - moves;
 
-	if (moves.len == 1) {
-		memcpy(move, &array_get(&moves, 0), sizeof(struct move));
-		array_free(&moves);
+	if (len == 1) {
+		memcpy(move, &moves[0] , sizeof(struct move));
 		return true;
 	}
 
-	for (int i = 0; i < moves.len; ++i) {
-		struct move m = array_get(&moves, i);
+	for (int i = 0; i < len; ++i) {
+		struct move m = moves[i];
 		if (disambiguate(disamb, m.from)) {
-			memcpy(move, &m, sizeof(struct move));
-			array_free(&moves);
+			memcpy(move, &m, sizeof(m));
 			return true;
 		}
 	}
-	array_free(&moves);
 	return false;
 }
 

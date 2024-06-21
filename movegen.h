@@ -4,7 +4,7 @@
 #include "board.h"
 #include "move.h"
 
-// move generate configuration
+// Parameters to passed into generate_moves
 struct movegenc {
 	enum movetype movetype;	// type of move to generate
 	enum piece piece;	// piece to generate moves for
@@ -13,5 +13,5 @@ struct movegenc {
 };
 
 void init_lineattacks_table();
-void generate_moves(struct board *board, struct movelist *moves, struct movegenc *conf);
+struct move* generate_moves(struct board *board, struct move *moves, struct movegenc *conf);
 #endif
