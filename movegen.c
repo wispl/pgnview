@@ -1,5 +1,7 @@
 #include "movegen.h"
 
+#include "bitboard.h"
+
 #include <assert.h>
 #include <string.h>
 #include <stdbool.h>

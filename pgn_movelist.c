@@ -1,7 +1,6 @@
 #include "pgn_movelist.h"
 
 #include "array.h"
-#include "bitboard.h"
 #include "move.h"
 #include "movegen.h"
 #include "parser.h"

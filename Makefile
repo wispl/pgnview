@@ -11,7 +11,7 @@ pgncat: $(OBJECTS) main.c
 	$(CC) -o pgncat main.c $(OBJECTS) $(LDFLAGS)
 
 parser.o: parser.h array.h
-pgn_movelist.o: pgn_movelist.h array.h bitboard.h movegen.h move.h
+pgn_movelist.o: pgn_movelist.h array.h movegen.h move.h
 movegen.o: movegen.h board.h array.h move.h
 board.o: board.h bitboard.h move.h
 bitboard.o: bitboard.h
