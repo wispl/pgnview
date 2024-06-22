@@ -48,9 +48,6 @@ static char* piece_str[PIECE_ID_MAX] = {
 	[EMPTY]    = " ",
 };
 
-// Stores captured pieces for unwinding
-array_define(plystack, enum piece_id);
-
 void draw_square(int x, int y, char *str, uintattr_t fg, uintattr_t bg)
 {
 	// sample top and bottom squares to blend them
@@ -99,10 +96,12 @@ void draw_board(struct board *board)
 	}
 }
 
-void do_move(struct board *board, struct move *move, struct plystack *ply)
+void do_move(struct board *board, struct move *move, enum piece_id *pieces, int *idx)
 {
 	if (move->movetype == CAPTURE) {
-		array_push(ply, board->squares[move->to]);
+		pieces[*idx] = board->squares[move->to];
+		tb_printf(0,0,0,0,"%s",piece_str[pieces[*idx]]);
+		++*idx;
 	}
 	board_move(board, move);
 
@@ -111,11 +110,11 @@ void do_move(struct board *board, struct move *move, struct plystack *ply)
 	highlight_square(move->to);
 }
 
-void undo_move(struct board *board, struct move *move, struct plystack *ply)
+void undo_move(struct board *board, struct move *move, enum piece_id *pieces, int *idx)
 {
 	if (move->movetype == CAPTURE) {
-		board_undo_move(board, move, array_last(ply));
-		array_pop(ply);
+		--*idx;
+		board_undo_move(board, move, pieces[*idx]);
 	} else {
 		board_undo_move(board, move, EMPTY);
 	}
@@ -163,20 +162,22 @@ int main(int argc, char **argv)
 		printf("Please specify a file!\n");
 		return 0;
 	}
-
-	init_lineattacks_table();
-	tb_init();
-	tb_hide_cursor();
+	struct pgn pgn;
+	pgn_read(&pgn, argv[1]);
 
 	struct board board;
 	board_init(&board);
+	// Stores captured pieces for unwinding
+	// 30 is the number of capturable pieces on a board
+	enum piece_id pieces[30];
+	int  pieces_idx = 0;
 
-	struct pgn pgn;
-	struct plystack ARRAY(ply);
-
-	pgn_read(&pgn, argv[1]);
+	init_lineattacks_table();
 	struct move *moves = malloc(sizeof(moves[0]) * pgn.moves.len);
 	int moves_len = pgn_to_moves(&pgn.moves, moves);
+
+	tb_init();
+	tb_hide_cursor();
 
 	bool running = true;
 	struct tb_event event;
@@ -210,25 +211,25 @@ int main(int argc, char **argv)
 			if (event.key == TB_KEY_ARROW_RIGHT) {
 				if (curr < moves_len - 1) {
 					++curr;
-					do_move(&board, &moves[curr], &ply);
+					do_move(&board, &moves[curr], pieces, &pieces_idx);
 				}
 			}
 			if (event.key == TB_KEY_ARROW_LEFT) {
 				if (curr > -1) {
-					undo_move(&board, &moves[curr], &ply);
+					undo_move(&board, &moves[curr], pieces, &pieces_idx);
 					--curr;
 				}
 			}
 			if (event.key == TB_KEY_ARROW_UP) {
 				while (curr != -1) {
-					undo_move(&board, &moves[curr], &ply);
+					undo_move(&board, &moves[curr], pieces, &pieces_idx);
 					--curr;
 				}
 			}
 			if (event.key == TB_KEY_ARROW_DOWN) {
 				while (curr != moves_len - 1) {
 					++curr;
-					do_move(&board, &moves[curr], &ply);
+					do_move(&board, &moves[curr], pieces, &pieces_idx);
 				}
 			}
 			draw_moves(&pgn.moves, curr);
@@ -238,7 +239,6 @@ int main(int argc, char **argv)
 		}
 	}
 
-	array_free(&ply);
 	free(moves);
 	pgn_free(&pgn);
 
