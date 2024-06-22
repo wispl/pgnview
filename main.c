@@ -10,6 +10,8 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+#define malloc_array(count, size) (malloc(count * size))
+
 #define CELLW  5
 #define CELLH  2
 
@@ -46,6 +48,24 @@ static char* piece_str[PIECE_ID_MAX] = {
 	[B_KNIGHT] = "n",
 	[B_PAWN]   = "p",
 	[EMPTY]    = " ",
+};
+
+struct state {
+	struct pgn pgn;
+	struct board board;
+
+	struct move *moves;
+	int moves_idx;
+
+	// Stores captured pieces for unwinding
+	// 30 is the number of capturable pieces on a board
+	enum piece_id captures[30];
+	int captures_idx;
+};
+
+static struct state state = {
+	.moves_idx = -1,
+	.captures_idx = 0
 };
 
 void draw_square(int x, int y, char *str, uintattr_t fg, uintattr_t bg)
@@ -96,33 +116,6 @@ void draw_board(struct board *board)
 	}
 }
 
-void do_move(struct board *board, struct move *move, enum piece_id *pieces, int *idx)
-{
-	if (move->movetype == CAPTURE) {
-		pieces[*idx] = board->squares[move->to];
-		++*idx;
-	}
-	board_move(board, move);
-
-	draw_board(board);
-	highlight_square(move->from);
-	highlight_square(move->to);
-}
-
-void undo_move(struct board *board, struct move *move, enum piece_id *pieces, int *idx)
-{
-	if (move->movetype == CAPTURE) {
-		--*idx;
-		board_undo_move(board, move, pieces[*idx]);
-	} else {
-		board_undo_move(board, move, EMPTY);
-	}
-
-	draw_board(board);
-	highlight_square(move->from);
-	highlight_square(move->to);
-}
-
 void draw_moves(struct pgn_movelist *moves, int current)
 {
 	int x = RIGHTX + CELLW;
@@ -155,38 +148,61 @@ void draw_moves(struct pgn_movelist *moves, int current)
 	}
 }
 
+void do_move(bool undo)
+{
+	struct move curr;
+	if (undo) {
+		curr = state.moves[state.moves_idx];
+		enum piece_id piece = EMPTY;
+		if (curr.movetype == CAPTURE) {
+			--state.captures_idx;
+			piece = state.captures[state.captures_idx];
+		}
+		board_undo_move(&state.board, &curr, piece);
+		--state.moves_idx;
+	} else {
+		++state.moves_idx;
+
+		curr = state.moves[state.moves_idx];
+		board_move(&state.board, &curr);
+
+		if (curr.movetype == CAPTURE) {
+			state.captures[state.captures_idx] = state.board.squares[curr.to];
+			++state.captures_idx;
+		}
+	}
+
+	draw_board(&state.board);
+	highlight_square(curr.from);
+	highlight_square(curr.to);
+}
+
 int main(int argc, char **argv)
 {
 	if (argc < 2) {
 		printf("Please specify a file!\n");
 		return 0;
 	}
-	struct pgn pgn;
-	pgn_read(&pgn, argv[1]);
-
-	struct board board;
-	board_init(&board);
-	// Stores captured pieces for unwinding
-	// 30 is the number of capturable pieces on a board
-	enum piece_id pieces[30];
-	int  pieces_idx = 0;
-
 	init_lineattacks_table();
-	struct move *moves = malloc(sizeof(moves[0]) * pgn.moves.len);
-	int moves_len = pgn_to_moves(&pgn.moves, moves);
+	board_init(&state.board);
+	// TODO: handle read and file errors
+	pgn_read(&state.pgn, argv[1]);
+
+	// TODO: handle length mismatch
+	state.moves   = malloc_array(state.pgn.moves.len, sizeof(struct move));
+	int moves_len = pgn_to_moves(&state.pgn.moves, state.moves);
 
 	tb_init();
 	tb_hide_cursor();
 
-	bool running = true;
-	struct tb_event event;
-	int result;
-	int curr = -1;
-
-	draw_board(&board);
-	draw_moves(&pgn.moves, curr);
+	// initial draw
+	draw_board(&state.board);
+	draw_moves(&state.pgn.moves, state.moves_idx);
 	tb_present();
 
+	int result;
+	struct tb_event event;
+	bool running = true;
 	while (running) {
 		result = tb_poll_event(&event);
 		if (result != TB_OK) {
@@ -199,8 +215,8 @@ int main(int argc, char **argv)
 		switch (event.type) {
 		case TB_EVENT_RESIZE:
 			tb_clear();
-			draw_board(&board);
-			draw_moves(&pgn.moves, curr);
+			draw_board(&state.board);
+			draw_moves(&state.pgn.moves, state.moves_idx);
 			tb_present();
 			break;
 		case TB_EVENT_KEY:
@@ -208,39 +224,36 @@ int main(int argc, char **argv)
 				running = false;
 			}
 			if (event.key == TB_KEY_ARROW_RIGHT) {
-				if (curr < moves_len - 1) {
-					++curr;
-					do_move(&board, &moves[curr], pieces, &pieces_idx);
+				if (state.moves_idx < state.pgn.moves.len - 1) {
+					do_move(false);
 				}
 			}
 			if (event.key == TB_KEY_ARROW_LEFT) {
-				if (curr > -1) {
-					undo_move(&board, &moves[curr], pieces, &pieces_idx);
-					--curr;
+				if (state.moves_idx > -1) {
+					do_move(true);
 				}
 			}
 			if (event.key == TB_KEY_ARROW_UP) {
-				while (curr != -1) {
-					undo_move(&board, &moves[curr], pieces, &pieces_idx);
-					--curr;
+				while (state.moves_idx != -1) {
+					do_move(true);
 				}
 			}
 			if (event.key == TB_KEY_ARROW_DOWN) {
-				while (curr != moves_len - 1) {
-					++curr;
-					do_move(&board, &moves[curr], pieces, &pieces_idx);
+				while (state.moves_idx != state.pgn.moves.len - 1) {
+					do_move(false);
 				}
 			}
-			draw_moves(&pgn.moves, curr);
+			draw_moves(&state.pgn.moves, state.moves_idx);
 			tb_present();
 			break;
 		default: break;
 		}
 	}
 
-	free(moves);
-	pgn_free(&pgn);
+	free(state.moves);
+	pgn_free(&state.pgn);
 
 	tb_shutdown();
+
 	return 1;
 }
