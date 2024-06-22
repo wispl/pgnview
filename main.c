@@ -100,7 +100,6 @@ void do_move(struct board *board, struct move *move, enum piece_id *pieces, int 
 {
 	if (move->movetype == CAPTURE) {
 		pieces[*idx] = board->squares[move->to];
-		tb_printf(0,0,0,0,"%s",piece_str[pieces[*idx]]);
 		++*idx;
 	}
 	board_move(board, move);
