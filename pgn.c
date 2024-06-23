@@ -65,11 +65,12 @@ struct parser {
 	FILE *file;
 	struct token token;
 	char last_char;
+	int y, x;	// location of lexer cursor (syntax errors)
 
 	// parser
 	int error_buf_idx;
 	bool unhandled_error;
-	int y, x;
+	int py, px;	// location of parser cursor (parser errors)
 
 	// data
 	struct pgn *pgn;
@@ -85,21 +86,12 @@ static inline bool is_symbol(char c)
 			  || c == '=' || c == ':' || c == '-';
 }
 
-static char next_char(struct parser *parser)
-{
-	if (parser->last_char == '\n') {
-		++parser->y;
-		parser->x = 0;
-	}
-	++parser->x;
-	parser->last_char = getc(parser->file);
-	return parser->last_char;
-}
-
 // TODO: small buffer of parsed characters for error messages
 // TODO: nag tokens
 static void next_token(struct parser *parser)
 {
+	parser->x += parser->token.len - 1;
+
 	// EOF token
 	if (parser->last_char == EOF) {
 		parser->token.type = TK_EOF;
@@ -108,16 +100,22 @@ static void next_token(struct parser *parser)
 
 	// ignore whitespace
 	while (isspace(parser->last_char)) {
-		next_char(parser);
+		++parser->x;
+		if (parser->last_char == '\n') {
+			parser->x = 1;
+			++parser->y;
+		}
+		parser->last_char = getc(parser->file);
 	}
 
 	// ignore comments
 	if (parser->last_char == ';') {
 		do {
-			next_char(parser);
+			parser->last_char = getc(parser->file);
 		} while (parser->last_char != EOF &&
 			 parser->last_char != '\n' &&
 			 parser->last_char != '\r');
+		++parser->y;
 	}
 
 	// terminal tokens
@@ -136,15 +134,16 @@ static void next_token(struct parser *parser)
 		parser->token.value[0] = parser->last_char;
 		parser->token.value[1] = '\0';
 		parser->token.len = 2;
-		next_char(parser);
+		parser->last_char = getc(parser->file);
 		return;
 	}
 
 	// string token
 	if (parser->last_char == '"') {
+		++parser->x;
 		parser->token.type = TK_STRING;
 		int len = 0;
-		while ((next_char(parser)) != '"') {
+		while ((parser->last_char = getc(parser->file)) != '"') {
 			parser->token.value[len] = parser->last_char;
 			++len;
 		}
@@ -152,7 +151,7 @@ static void next_token(struct parser *parser)
 		parser->token.len = len + 1;
 
 		// skip closing quotes
-		next_char(parser);
+		parser->last_char = getc(parser->file);
 		return;
 	}
 
@@ -163,7 +162,7 @@ static void next_token(struct parser *parser)
 		do {
 			all_ints &= (isdigit(parser->last_char) != 0);
 			parser->token.value[len] = parser->last_char;
-			next_char(parser);
+			parser->last_char = getc(parser->file);
 			++len;
 		} while (is_symbol(parser->last_char));
 
@@ -179,7 +178,7 @@ static void next_token(struct parser *parser)
 	parser->token.value[1] = '\0';
 	parser->token.len = 2;
 
-	next_char(parser);
+	parser->last_char = getc(parser->file);
 }
 
 //
@@ -219,9 +218,6 @@ static inline void copy_token_value(char **buffer, struct token *token)
 // tag is made of the following tokens: "[SYMBOL STRING]"
 static void tag(struct parser *parser)
 {
-	int x = parser->x;
-	int y = parser->y;
-
 	struct pgn_tag tag;
 
 	expect(parser, TK_LBRACKET);
@@ -235,7 +231,7 @@ static void tag(struct parser *parser)
 	expect(parser, TK_RBRACKET);
 
 	if (parser->unhandled_error) {
-		fprintf(stderr, parser_err, y, x, "tag");
+		fprintf(stderr, parser_err, parser->py, parser->px, "tag");
 		parser->unhandled_error = false;
 	} else {
 		array_push(&parser->pgn->tags, tag);
@@ -248,9 +244,6 @@ static void tag(struct parser *parser)
 // and is optional for imports.
 static void movetext(struct parser *parser)
 {
-	int x = parser->x;
-	int y = parser->y;
-
 	struct pgn_move move;
 
 	if (check(parser, TK_INTEGER)) {
@@ -265,7 +258,7 @@ static void movetext(struct parser *parser)
 	expect(parser, TK_SYMBOL);
 
 	if (parser->unhandled_error) {
-		fprintf(stderr, parser_err, y, x, "move");
+		fprintf(stderr, parser_err, parser->py, parser->px, "move");
 		parser->unhandled_error = false;
 	} else {
 		array_push(&parser->pgn->moves, move);
@@ -281,7 +274,7 @@ void pgn_read(struct pgn* pgn, char* filename)
 		.last_char = ' ',
 		.error_buf_idx = 0,
 		.y = 1,
-		.x = 0,
+		.x = 1,
 		.pgn = pgn
 	};
 	array_init(&pgn->tags);
@@ -294,8 +287,10 @@ void pgn_read(struct pgn* pgn, char* filename)
 	// parsing
 	next_token(&parser);
 	while (parser.token.type != TK_EOF) {
+		parser.px = parser.x;
+		parser.py = parser.y;
 		switch (parser.token.type) {
-		case TK_LBRACKET: tag(&parser);  break;
+		case TK_LBRACKET: tag(&parser);      break;
 		case TK_INTEGER:  movetext(&parser); break;
 		case TK_SYMBOL:	  movetext(&parser); break;
 		default: 	  next_token(&parser);
