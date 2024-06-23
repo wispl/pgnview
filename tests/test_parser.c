@@ -1,5 +1,5 @@
 #include "../array.h"
-#include "../parser.h"
+#include "../pgn.h"
 
 #include <assert.h>
 #include <stdio.h>

@@ -2,7 +2,7 @@
 #define PGN_MOVELIST_H
 
 #include "move.h"
-#include "parser.h"
+#include "pgn.h"
 
 // Converts a list of "struct pgn_move" to a list of "struct move", "moves"
 // must be large enough! (>= pgn_moves.len).

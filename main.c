@@ -2,7 +2,7 @@
 #include "board.h"
 #include "move.h"
 #include "movegen.h"
-#include "parser.h"
+#include "pgn.h"
 #include "pgn_movelist.h"
 
 #include "termbox2.h"

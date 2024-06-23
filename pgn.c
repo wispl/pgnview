@@ -1,4 +1,4 @@
-#include "parser.h"
+#include "pgn.h"
 
 #include "array.h"
 

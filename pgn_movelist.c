@@ -3,7 +3,7 @@
 #include "array.h"
 #include "move.h"
 #include "movegen.h"
-#include "parser.h"
+#include "pgn.h"
 
 #include <assert.h>
 #include <stdbool.h>

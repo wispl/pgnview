@@ -1,6 +1,6 @@
 #include "../array.h"
 #include "../movegen.h"
-#include "../parser.h"
+#include "../pgn.h"
 #include "../pgn_movelist.h"
 
 #include <assert.h>
