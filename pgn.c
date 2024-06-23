@@ -243,35 +243,32 @@ static void tag(struct parser *parser)
 }
 
 // TODO: handle comments and NAG tokens
-// move is made of the following tokens: "(INTEGER PERIOD+)? SYMBOL SYMBOL"
+// Move is made of the following tokens: "(INTEGER PERIOD+)? SYMBOL"
+// The "(Integer PERIOD+)?" portion is known as the move indicator
+// and is optional for imports.
 static void movetext(struct parser *parser)
 {
 	int x = parser->x;
 	int y = parser->y;
 
-	struct pgn_move white, black;
+	struct pgn_move move;
 
-	// move-indicator, the 1. in (1. e4 e5), is optional
 	if (check(parser, TK_INTEGER)) {
 		expect(parser, TK_INTEGER);
-		// weird, but unlimited periods is permitted by the standard
+		// unlimited periods is permitted by the standard: "1..."
 		do {
 			expect(parser, TK_PERIOD);
 		} while (check(parser, TK_PERIOD));
 	}
 
-	memcpy(&white.text, &parser->token.value, parser->token.len);
-	expect(parser, TK_SYMBOL);
-
-	memcpy(&black.text, &parser->token.value, parser->token.len);
+	memcpy(&move.text, &parser->token.value, parser->token.len);
 	expect(parser, TK_SYMBOL);
 
 	if (parser->unhandled_error) {
 		fprintf(stderr, parser_err, y, x, "move");
 		parser->unhandled_error = false;
 	} else {
-		array_push(&parser->pgn->moves, white);
-		array_push(&parser->pgn->moves, black);
+		array_push(&parser->pgn->moves, move);
 	}
 }
 
