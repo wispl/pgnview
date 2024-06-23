@@ -55,15 +55,17 @@ struct token {
 // internal structure for sharing data between parsing functions
 struct parser {
 	// lexer
-	FILE *file;          // file being lexed and parsed
-	struct token token;  // current token
+	FILE *file;
+	struct token token;
 	char last_char;
 
 	// parser
+	int error_buf_idx;
 	bool unhandled_error;
+	int y, x;
 
 	// data
-	struct pgn *pgn;    // pgn data to fill during parsing
+	struct pgn *pgn;
 };
 
 //
@@ -76,22 +78,20 @@ static inline bool is_symbol(char c)
 			  || c == '=' || c == ':' || c == '-';
 }
 
-static char cntrlchr(char c)
+static char next_char(struct parser *parser)
 {
-	switch (c) {
-	case '\a': return 'a';
-	case '\b': return 'b';
-	case '\e': return 'e';
-	case '\n': return 'n';
-	case '\r': return 'r';
-	case '\t': return 't';
+	if (parser->last_char == '\n') {
+		++parser->y;
+		parser->x = 0;
 	}
-	return '?';
+	++parser->x;
+	parser->last_char = getc(parser->file);
+	return parser->last_char;
 }
 
 // TODO: small buffer of parsed characters for error messages
 // TODO: nag tokens
-void next_token(struct parser *parser)
+static void next_token(struct parser *parser)
 {
 	// EOF token
 	if (parser->last_char == EOF) {
@@ -101,13 +101,13 @@ void next_token(struct parser *parser)
 
 	// ignore whitespace
 	while (isspace(parser->last_char)) {
-		parser->last_char = getc(parser->file);
+		next_char(parser);
 	}
 
 	// ignore comments
 	if (parser->last_char == ';') {
 		do {
-			parser->last_char = getc(parser->file);
+			next_char(parser);
 		} while (parser->last_char != EOF &&
 			 parser->last_char != '\n' &&
 			 parser->last_char != '\r');
@@ -129,7 +129,7 @@ void next_token(struct parser *parser)
 		parser->token.value[0] = parser->last_char;
 		parser->token.value[1] = '\0';
 		parser->token.len = 2;
-		parser->last_char = getc(parser->file);
+		next_char(parser);
 		return;
 	}
 
@@ -137,7 +137,7 @@ void next_token(struct parser *parser)
 	if (parser->last_char == '"') {
 		parser->token.type = TK_STRING;
 		int len = 0;
-		while ((parser->last_char = getc(parser->file)) != '"') {
+		while ((next_char(parser)) != '"') {
 			parser->token.value[len] = parser->last_char;
 			++len;
 		}
@@ -145,7 +145,7 @@ void next_token(struct parser *parser)
 		parser->token.len = len + 1;
 
 		// skip closing quotes
-		parser->last_char = getc(parser->file);
+		next_char(parser);
 		return;
 	}
 
@@ -156,7 +156,7 @@ void next_token(struct parser *parser)
 		do {
 			all_ints &= (isdigit(parser->last_char) != 0);
 			parser->token.value[len] = parser->last_char;
-			parser->last_char = getc(parser->file);
+			next_char(parser);
 			++len;
 		} while (is_symbol(parser->last_char));
 
@@ -168,18 +168,11 @@ void next_token(struct parser *parser)
 
 	// unknown tokens
 	parser->token.type = TK_UNKNOWN;
-	if (isprint(parser->last_char)) {
-		parser->token.value[0] = parser->last_char;
-		parser->token.value[1] = '\0';
-		parser->token.len = 2;
-	} else {
-		// store control sequences literally
-		parser->token.value[0] = '\\';
-		parser->token.value[1] = cntrlchr(parser->last_char);
-		parser->token.value[2] = '\0';
-		parser->token.len = 3;
-	}
-	parser->last_char = getc(parser->file);
+	parser->token.value[0] = parser->last_char;
+	parser->token.value[1] = '\0';
+	parser->token.len = 2;
+
+	next_char(parser);
 }
 
 //
@@ -193,14 +186,20 @@ static inline bool check(struct parser *parser, enum token_type type)
 
 static bool expect(struct parser *parser, enum token_type type)
 {
-	// lexer will be one token ahead of parser after calling this
+	static const char *syntax_err =
+		"Error(Syntax) |%d, col %d|: expected token '%s' "
+		"but found token '%s' with value '%s'\n";
+
 	if (check(parser, type)) {
 		next_token(parser);
 		return true;
 	}
 
 	parser->unhandled_error = true;
-	fprintf(stderr, "[Syntax Error] expected token '%s' found token '%s' with value '%s'\n",
+
+	fprintf(stderr, syntax_err,
+		parser->y,
+		parser->x,
 	 	token_str[type],
 	 	token_str[parser->token.type],
 	 	parser->token.value);
@@ -274,6 +273,9 @@ void pgn_read(struct pgn* pgn, char* filename)
 	struct parser parser = {
 		.file  = fopen(filename, "r"),
 		.last_char = ' ',
+		.error_buf_idx = 0,
+		.y = 0,
+		.x = 0,
 		.pgn = pgn
 	};
 	array_init(&pgn->tags);
