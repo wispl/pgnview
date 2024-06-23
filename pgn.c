@@ -21,7 +21,7 @@ enum token_type {
 	TK_PERIOD,	// .
 	TK_ASTERISK,	// *
 	TK_STRING,	// quote delimeted characters
-	TK_SYMBOL,	// letter or digited followed by any of these [A-Za-z0-9_+#=:-]
+	TK_SYMBOL,	// letter or digits followed by any of [A-Za-z0-9_+#=:-]
 	TK_INTEGER,	// sequence of decimal digits, special case of SYMBOL
 	TK_NAG,		// $ followed by digits
 	TK_UNKNOWN,     // unparsable tokens
@@ -46,10 +46,17 @@ static const char* token_str[TK_MAX] = {
 	[TK_EOF]      = "eof"
 };
 
+static const char *syntax_err =
+	"Error(Syntax) |%d, col %d|: expected token '%s' "
+	"but found token '%s' with value '%s'\n";
+
+static const char *parser_err =
+	"Error(Parser) |%d, col %d|: error occured trying to parse '%s'\n";
+
 struct token {
-	enum token_type type;   // type of the token
-	char value[256]; 	// symbols and strings have max length of 255
-	int len;                // length of value, including the null terminator
+	enum token_type type; // type of the token
+	char value[256];      // symbols and strings have max length of 255
+	int len;              // length of value, including the null terminator
 };
 
 // internal structure for sharing data between parsing functions
@@ -186,10 +193,6 @@ static inline bool check(struct parser *parser, enum token_type type)
 
 static bool expect(struct parser *parser, enum token_type type)
 {
-	static const char *syntax_err =
-		"Error(Syntax) |%d, col %d|: expected token '%s' "
-		"but found token '%s' with value '%s'\n";
-
 	if (check(parser, type)) {
 		next_token(parser);
 		return true;
@@ -216,6 +219,9 @@ static inline void copy_token_value(char **buffer, struct token *token)
 // tag is made of the following tokens: "[SYMBOL STRING]"
 static void tag(struct parser *parser)
 {
+	int x = parser->x;
+	int y = parser->y;
+
 	struct pgn_tag tag;
 
 	expect(parser, TK_LBRACKET);
@@ -229,7 +235,7 @@ static void tag(struct parser *parser)
 	expect(parser, TK_RBRACKET);
 
 	if (parser->unhandled_error) {
-		fprintf(stderr, "[Parser Error] Unable to parse 'tag' due to errors\n");
+		fprintf(stderr, parser_err, y, x, "tag");
 		parser->unhandled_error = false;
 	} else {
 		array_push(&parser->pgn->tags, tag);
@@ -240,6 +246,9 @@ static void tag(struct parser *parser)
 // move is made of the following tokens: "(INTEGER PERIOD+)? SYMBOL SYMBOL"
 static void movetext(struct parser *parser)
 {
+	int x = parser->x;
+	int y = parser->y;
+
 	struct pgn_move white, black;
 
 	// move-indicator, the 1. in (1. e4 e5), is optional
@@ -258,7 +267,7 @@ static void movetext(struct parser *parser)
 	expect(parser, TK_SYMBOL);
 
 	if (parser->unhandled_error) {
-		fprintf(stderr, "[Parser Error] Unable to parse 'movetext' due to errors\n");
+		fprintf(stderr, parser_err, y, x, "move");
 		parser->unhandled_error = false;
 	} else {
 		array_push(&parser->pgn->moves, white);
@@ -274,7 +283,7 @@ void pgn_read(struct pgn* pgn, char* filename)
 		.file  = fopen(filename, "r"),
 		.last_char = ' ',
 		.error_buf_idx = 0,
-		.y = 0,
+		.y = 1,
 		.x = 0,
 		.pgn = pgn
 	};
