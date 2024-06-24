@@ -137,6 +137,7 @@ static void next_token(struct parser *parser)
 		return;
 	}
 
+	// nag tokens
 	if (parser->last_char == '$') {
 		int len = 0;
 		do {
@@ -245,6 +246,8 @@ static void tag(struct parser *parser)
 
 	if (parser->unhandled_error) {
 		fprintf(stderr, parser_err, parser->py, parser->px, "tag");
+		free(&tag.name);
+		free(&tag.desc);
 		parser->unhandled_error = false;
 	} else {
 		array_push(&parser->pgn->tags, tag);
