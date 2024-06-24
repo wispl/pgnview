@@ -87,7 +87,6 @@ static inline bool is_symbol(char c)
 }
 
 // TODO: small buffer of parsed characters for error messages
-// TODO: nag tokens
 static void next_token(struct parser *parser)
 {
 	parser->x += parser->token.len - 1;
@@ -135,6 +134,20 @@ static void next_token(struct parser *parser)
 		parser->token.value[1] = '\0';
 		parser->token.len = 2;
 		parser->last_char = getc(parser->file);
+		return;
+	}
+
+	if (parser->last_char == '$') {
+		int len = 0;
+		do {
+			parser->token.value[len] = parser->last_char;
+			parser->last_char = getc(parser->file);
+			++len;
+		} while (isdigit(parser->last_char));
+
+		parser->token.type = TK_NAG;
+		parser->token.value[len] = '\0';
+		parser->token.len = len + 1;
 		return;
 	}
 
