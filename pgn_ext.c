@@ -1,6 +1,5 @@
-#include "pgn_movelist.h"
+#include "pgn_ext.h"
 
-#include "array.h"
 #include "move.h"
 #include "movegen.h"
 #include "pgn.h"
@@ -161,7 +160,7 @@ int pgn_to_moves(const struct pgn_movelist *pgn_moves, struct move *moves)
 	struct movegenc conf;
 	struct move move;
 	for (int i = 0; i < pgn_moves->len; ++i) {
-		struct pgn_move pgn_move = array_get(pgn_moves, i);
+		struct pgn_move pgn_move = pgn_moves->data[i];
 		// white moves are even and black moves are odd, based on index
 		int disamb = santogenc(pgn_move.text, &conf, (i & 1));
 		bool found = find_move(&board, &conf, disamb, &move);

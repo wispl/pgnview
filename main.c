@@ -3,7 +3,7 @@
 #include "move.h"
 #include "movegen.h"
 #include "pgn.h"
-#include "pgn_movelist.h"
+#include "pgn_ext.h"
 
 #include "termbox2.h"
 

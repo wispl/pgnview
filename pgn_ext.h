@@ -1,5 +1,5 @@
-#ifndef PGN_MOVELIST_H
-#define PGN_MOVELIST_H
+#ifndef PGN_EXT_H
+#define PGN_EXT_H
 
 #include "move.h"
 #include "pgn.h"
