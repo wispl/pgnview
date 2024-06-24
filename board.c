@@ -1,6 +1,7 @@
 #include "board.h"
 
 #include "bitboard.h"
+#include "move.h"
 
 #include <stdbool.h>
 #include <stdio.h>

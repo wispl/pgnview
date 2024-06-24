@@ -10,10 +10,10 @@ TESTS := $(wildcard tests/test_*.c)
 pgncat: $(OBJECTS) main.c
 	$(CC) -o pgncat main.c $(OBJECTS) $(LDFLAGS)
 
-pgn.o: pgn.h array.h
-pgn_ext.o: pgn_ext.h movegen.h move.h
-movegen.o: movegen.h board.h  move.h
+pgn_ext.o: pgn_ext.h pgn.h movegen.h move.h
+movegen.o: movegen.h board.h bitboard.h move.h
 board.o: board.h bitboard.h move.h
+pgn.o: pgn.h array.h
 bitboard.o: bitboard.h
 termbox2.o: termbox2.h
 
