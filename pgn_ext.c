@@ -131,7 +131,7 @@ static bool disambiguate(int disamb, int from)
 
 static move find_move(struct board *board, struct movegenc *conf, int disamb)
 {
-	move moves[256];
+	move moves[16];
 	move *last = generate_moves(board, moves, conf);
 	int len = last - moves;
 
