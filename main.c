@@ -1,4 +1,3 @@
-#include "array.h"
 #include "board.h"
 #include "move.h"
 #include "movegen.h"
@@ -136,7 +135,7 @@ void draw_moves(struct pgn_movelist *moves, int current)
 			x += 4;
 		}
 
-		char *str = (i < moves->len) ? array_get(moves, i).text : " ";
+		char *str = (i < moves->len) ? moves->data[i].text : " ";
 		tb_printf(x, y, (current == i) * TB_YELLOW, 0, "%-8s", str);
 		x += 8;
 
