@@ -1,5 +1,6 @@
 #include "pgn_ext.h"
 
+#include "board.h"
 #include "move.h"
 #include "movegen.h"
 #include "pgn.h"
@@ -38,7 +39,7 @@ static inline int santoi(char *san)
 }
 
 // Extracts from, to, and piece type from a SAN with special characters removed
-// and returns the disambiguation square, rank or file. Disambiguation is 
+// and returns the disambiguation square, rank or file. Disambiguation is
 // needed in cases where two or more pieces can reach the same square
 //
 // QUIET: 	e4, Nf6
@@ -146,15 +147,15 @@ static move find_move(struct board *board, struct movegenc *conf, int disamb)
 	return 0;
 }
 
-int pgn_to_moves(const struct pgn_movelist *pgn_moves, move *moves)
+int pgn_to_moves(const struct pgn *pgn, move *moves)
 {
 	int n = 0;
 	struct board board;
 	board_init(&board);
 
 	struct movegenc conf;
-	for (int i = 0; i < pgn_moves->len; ++i) {
-		struct pgn_move pgn_move = pgn_moves->data[i];
+	for (int i = 0; i < pgn->movecount; ++i) {
+		struct pgn_move pgn_move = pgn->moves[i];
 		// white moves are even and black moves are odd, based on index
 		int disamb = santogenc(pgn_move.text, &conf, (i & 1));
 		move move = find_move(&board, &conf, disamb);

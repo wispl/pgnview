@@ -1,4 +1,3 @@
-#include "../array.h"
 #include "../pgn.h"
 
 #include <assert.h>
@@ -17,21 +16,19 @@ void test_pgn(char *file, char* tags[], int tagslen, char* moves[], int moveslen
 	struct pgn pgn;
 	pgn_read(&pgn, file);
 
-	assert(pgn.tags.len == tagslen && "Tags ommited");
-	assert(pgn.moves.len == moveslen && "Moves ommited");
+	assert(pgn.tagcount == tagslen && "Tags ommited");
+	assert(pgn.movecount == moveslen && "Moves ommited");
 	assert_str(pgn.result, "1-0");
 
 	char buffer[1024];
-	struct pgn_tag tag;
-	for (int i = 0; i < pgn.tags.len; ++i) {
-		tag = array_get(&pgn.tags, i);
+	for (int i = 0; i < pgn.tagcount; ++i) {
+		struct pgn_tag tag = pgn.tags[i];
 		sprintf(buffer, "%s %s\0", tag.name, tag.desc);
 		assert_str(buffer, tags[i]);
 	}
 
-	for (int i = 0; i < pgn.moves.len; ++i) {
-		assert_str(array_get(&pgn.moves, i).text, moves[i]);
-	}
+	for (int i = 0; i < pgn.movecount; ++i)
+		assert_str(pgn.moves[i].text, moves[i]);
 
 	pgn_free(&pgn);
 }

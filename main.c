@@ -115,7 +115,7 @@ void draw_board(struct board *board)
 	}
 }
 
-void draw_moves(struct pgn_movelist *moves, int current)
+void draw_moves(const struct pgn *pgn, int current)
 {
 	int x = RIGHTX + CELLW;
 	int y = LEFTY  + 2;
@@ -127,7 +127,7 @@ void draw_moves(struct pgn_movelist *moves, int current)
 		// number indicator at white moves (even index)
 		if (!(i & 1)) {
 			// supports up to 3 digit amount of moves
-			if (i < moves->len) {
+			if (i < pgn->movecount) {
 				tb_printf(x, y, 0, 0, "%-4d", (i / 2) + 1);
 			} else {
 				tb_printf(x, y, 0, 0, "%4s", " ");
@@ -135,7 +135,7 @@ void draw_moves(struct pgn_movelist *moves, int current)
 			x += 4;
 		}
 
-		char *str = (i < moves->len) ? moves->data[i].text : " ";
+		char *str = (i < pgn->movecount) ? pgn->moves[i].text : " ";
 		tb_printf(x, y, (current == i) * TB_YELLOW, 0, "%-8s", str);
 		x += 8;
 
@@ -187,15 +187,15 @@ int main(int argc, char **argv)
 	pgn_read(&state.pgn, argv[1]);
 
 	// TODO: handle length mismatch
-	state.moves   = malloc_array(state.pgn.moves.len, sizeof(move));
-	int moves_len = pgn_to_moves(&state.pgn.moves, state.moves);
+	state.moves   = malloc_array(state.pgn.movecount, sizeof(move));
+	int moves_len = pgn_to_moves(&state.pgn, state.moves);
 
 	tb_init();
 	tb_hide_cursor();
 
 	// initial draw
 	draw_board(&state.board);
-	draw_moves(&state.pgn.moves, state.moves_idx);
+	draw_moves(&state.pgn, state.moves_idx);
 	tb_present();
 
 	int result;
@@ -214,34 +214,30 @@ int main(int argc, char **argv)
 		case TB_EVENT_RESIZE:
 			tb_clear();
 			draw_board(&state.board);
-			draw_moves(&state.pgn.moves, state.moves_idx);
+			draw_moves(&state.pgn, state.moves_idx);
 			tb_present();
 			break;
 		case TB_EVENT_KEY:
-			if (event.ch == 'q') {
+			if (event.ch == 'q')
 				running = false;
-			}
+		
 			if (event.key == TB_KEY_ARROW_RIGHT) {
-				if (state.moves_idx < state.pgn.moves.len - 1) {
+				if (state.moves_idx < state.pgn.movecount - 1)
 					do_move(false);
-				}
 			}
 			if (event.key == TB_KEY_ARROW_LEFT) {
-				if (state.moves_idx > -1) {
+				if (state.moves_idx > -1)
 					do_move(true);
-				}
 			}
 			if (event.key == TB_KEY_ARROW_UP) {
-				while (state.moves_idx != -1) {
+				while (state.moves_idx != -1)
 					do_move(true);
-				}
 			}
 			if (event.key == TB_KEY_ARROW_DOWN) {
-				while (state.moves_idx != state.pgn.moves.len - 1) {
+				while (state.moves_idx != state.pgn.movecount - 1)
 					do_move(false);
-				}
 			}
-			draw_moves(&state.pgn.moves, state.moves_idx);
+			draw_moves(&state.pgn, state.moves_idx);
 			tb_present();
 			break;
 		default: break;

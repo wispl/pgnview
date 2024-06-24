@@ -1,9 +1,8 @@
 #include "pgn.h"
 
-#include "array.h"
-
 #include <ctype.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -75,6 +74,51 @@ struct parser {
 	// data
 	struct pgn *pgn;
 };
+
+// stretchy buffer from skeeto's growable-buf
+#define VEC_INIT_SIZE 8
+
+struct vec {
+	int size;
+	int len;
+	char buffer[];
+};
+
+#define containerof(ptr) ((struct vec *)((char *)(ptr) - offsetof(struct vec, buffer)))
+
+#define vec_free(vec)    (free(containerof((vec))))
+
+#define vec_size(vec)    ((vec) ? containerof((vec))->size : 0)
+
+#define vec_len(vec)     ((vec) ? containerof((vec))->len : 0)
+
+#define vec_pop(vec) ((vec)[--containerof((vec))->len])
+
+#define vec_push(vec, e)                                         \
+	do {                                                     \
+		if (vec_len((vec)) == vec_size((vec)))           \
+			(vec) = vec_grow((vec), sizeof(*(vec))); \
+		(vec)[containerof((vec))->len++] = (e);          \
+	} while (0)
+
+static void* vec_grow(void *v, int element_size)
+{
+	struct vec *vec;
+	if (v) {
+		vec = containerof(v);
+		vec->size += (vec->size == 0) ? VEC_INIT_SIZE : vec->size;
+		vec = realloc(vec, sizeof(struct vec) + element_size * vec->size);
+		if (!vec)
+			abort();
+	} else {
+		vec = malloc(sizeof(struct vec) + element_size * VEC_INIT_SIZE);
+		if (!vec)
+			abort();
+		vec->size = VEC_INIT_SIZE;
+		vec->len = 0;
+	}
+	return vec->buffer;
+}
 
 //
 // Lexer
@@ -250,7 +294,7 @@ static void tag(struct parser *parser)
 		free(tag.desc);
 		parser->unhandled_error = false;
 	} else {
-		array_push(&parser->pgn->tags, tag);
+		vec_push(parser->pgn->tags, tag);
 	}
 }
 
@@ -277,7 +321,7 @@ static void movetext(struct parser *parser)
 		fprintf(stderr, parser_err, parser->py, parser->px, "move");
 		parser->unhandled_error = false;
 	} else {
-		array_push(&parser->pgn->moves, move);
+		vec_push(parser->pgn->moves, move);
 	}
 }
 
@@ -285,6 +329,8 @@ static void movetext(struct parser *parser)
 void pgn_read(struct pgn* pgn, char* filename)
 {
 	// initialization
+	pgn->tags = 0;
+	pgn->moves = 0;
 	struct parser parser = {
 		.file  = fopen(filename, "r"),
 		.last_char = ' ',
@@ -293,8 +339,6 @@ void pgn_read(struct pgn* pgn, char* filename)
 		.x = 1,
 		.pgn = pgn
 	};
-	array_init(&pgn->tags);
-	array_init(&pgn->moves);
 
 	if (parser.file == NULL) {
 		return;
@@ -315,9 +359,9 @@ void pgn_read(struct pgn* pgn, char* filename)
 
 	// finalization
 	// Delete last move as it provides the result of the game
-	char *result = array_last(&pgn->moves).text;
-	memcpy(pgn->result, result, sizeof(char) * 8);
-	array_pop(&pgn->moves);
+	memcpy(pgn->result, vec_pop(pgn->moves).text, sizeof(char) * 8);
+	pgn->tagcount = vec_len(pgn->tags);
+	pgn->movecount = vec_len(pgn->moves);
 
 	// cleanup
 	fclose(parser.file);
@@ -325,13 +369,10 @@ void pgn_read(struct pgn* pgn, char* filename)
 
 void pgn_free(struct pgn *pgn)
 {
-	if (pgn == NULL) {
-		return;
+	for (int i = 0; i < pgn->tagcount; ++i) {
+		free(pgn->tags[i].name);
+		free(pgn->tags[i].desc);
 	}
-	for (int i = 0; i < pgn->tags.len; ++i) {
-		free(array_get(&pgn->tags, i).name);
-		free(array_get(&pgn->tags, i).desc);
-	}
-	array_free(&pgn->tags);
-	array_free(&pgn->moves);
+	vec_free(pgn->tags);
+	vec_free(pgn->moves);
 }

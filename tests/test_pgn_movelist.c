@@ -30,10 +30,10 @@ void test_pgn_movelist(char *file, char* orig[], char* to[])
 	struct pgn pgn;
 	pgn_read(&pgn, file);
 
-	move *moves = malloc(sizeof(moves[0]) * pgn.moves.len);
-	int moves_len = pgn_to_moves(&pgn.moves, moves);
+	move *moves = malloc(sizeof(moves[0]) * pgn.movecount);
+	int moves_len = pgn_to_moves(&pgn, moves);
 
-	assert(pgn.moves.len == moves_len && "Moves ommited");
+	assert(pgn.movecount == moves_len && "Moves ommited");
 
 	// TODO: expand, promotion, castle, etc..
 	for (int i = 0; i < moves_len; ++i) {
