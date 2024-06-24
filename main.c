@@ -53,7 +53,7 @@ struct state {
 	struct pgn pgn;
 	struct board board;
 
-	struct move *moves;
+	move *moves;
 	int moves_idx;
 
 	// Stores captured pieces for unwinding
@@ -149,31 +149,30 @@ void draw_moves(struct pgn_movelist *moves, int current)
 
 void do_move(bool undo)
 {
-	struct move curr;
+	move curr;
 	if (undo) {
 		curr = state.moves[state.moves_idx];
 		enum piece_id piece = EMPTY;
-		if (curr.movetype == CAPTURE) {
+		if (move_is_capture(curr)) {
 			--state.captures_idx;
 			piece = state.captures[state.captures_idx];
 		}
-		board_undo_move(&state.board, &curr, piece);
+		board_undo_move(&state.board, curr, piece);
 		--state.moves_idx;
 	} else {
 		++state.moves_idx;
-
 		curr = state.moves[state.moves_idx];
-		board_move(&state.board, &curr);
 
-		if (curr.movetype == CAPTURE) {
-			state.captures[state.captures_idx] = state.board.squares[curr.to];
+		if (move_is_capture(curr)) {
+			state.captures[state.captures_idx] = state.board.squares[move_to(curr)];
 			++state.captures_idx;
 		}
+		board_move(&state.board, curr);
 	}
 
 	draw_board(&state.board);
-	highlight_square(curr.from);
-	highlight_square(curr.to);
+	highlight_square(move_from(curr));
+	highlight_square(move_to(curr));
 }
 
 int main(int argc, char **argv)
@@ -188,7 +187,7 @@ int main(int argc, char **argv)
 	pgn_read(&state.pgn, argv[1]);
 
 	// TODO: handle length mismatch
-	state.moves   = malloc_array(state.pgn.moves.len, sizeof(struct move));
+	state.moves   = malloc_array(state.pgn.moves.len, sizeof(move));
 	int moves_len = pgn_to_moves(&state.pgn.moves, state.moves);
 
 	tb_init();

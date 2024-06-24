@@ -1,7 +1,7 @@
 #include "../array.h"
 #include "../movegen.h"
 #include "../pgn.h"
-#include "../pgn_movelist.h"
+#include "../pgn_ext.h"
 
 #include <assert.h>
 #include <string.h>
@@ -30,19 +30,18 @@ void test_pgn_movelist(char *file, char* orig[], char* to[])
 	struct pgn pgn;
 	pgn_read(&pgn, file);
 
-	struct move *moves = malloc(sizeof(moves[0]) * pgn.moves.len);
+	move *moves = malloc(sizeof(moves[0]) * pgn.moves.len);
 	int moves_len = pgn_to_moves(&pgn.moves, moves);
 
 	assert(pgn.moves.len == moves_len && "Moves ommited");
 
 	// TODO: expand, promotion, castle, etc..
-	struct move move;
 	for (int i = 0; i < moves_len; ++i) {
-		move = moves[i];
+		move move = moves[i];
 		if (strchr(orig[i], 'x')) {
-			assert(move.movetype == CAPTURE && "Wrong movetype");
+			assert(move_is_capture(move) && "Wrong movetype");
 		}
-		assert((move.to == santoi(to[i])) && "To square mismatch");
+		assert((move_to(move) == santoi(to[i])) && "To square mismatch");
 	}
 
 	free(moves);

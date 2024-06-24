@@ -79,7 +79,7 @@ int santogenc(char *text, struct movegenc *conf, enum color color)
 	bool short_castle = (strcmp(text, "O-O") == 0);
 	bool long_castle  = (strcmp(text, "O-O-O") == 0);
 	if (short_castle || long_castle) {
-		conf->movetype = CASTLE;
+		conf->type     = CASTLE;
 		conf->piece    = KING;
 		conf->target   = (short_castle) ? h1 : a1;
 		// flip sides if black
@@ -103,7 +103,7 @@ int santogenc(char *text, struct movegenc *conf, enum color color)
 
 	if (eq_start) {
 		len -= 2;
-		conf->movetype = PROMOTION;
+		conf->type = PROMOTION;
 	}
 	if (x_start) {
 		len -= 1;
@@ -113,10 +113,10 @@ int santogenc(char *text, struct movegenc *conf, enum color color)
 		text[i]     = text[i + 1];
 		text[i + 1] = text[i + 2];
 		text[i + 2] = '\0';
-		conf->movetype = CAPTURE;
+		conf->type = CAPTURE;
 		
 	} else {
-		conf->movetype = QUIET;
+		conf->type = QUIET;
 	}
 
 	return extract_san(text, len, conf);
@@ -129,46 +129,40 @@ static bool disambiguate(int disamb, int from)
 	    || disamb == (from / 8);
 }
 
-static bool find_move(struct board *board, struct movegenc *conf, int disamb,
-		      struct move *move)
+static move find_move(struct board *board, struct movegenc *conf, int disamb)
 {
-	struct move moves[256];
-	struct move *last = generate_moves(board, moves, conf);
+	move moves[256];
+	move *last = generate_moves(board, moves, conf);
 	int len = last - moves;
 
-	if (len == 1) {
-		memcpy(move, &moves[0] , sizeof(struct move));
-		return true;
-	}
+	if (len == 1)
+		return moves[0];
 
 	for (int i = 0; i < len; ++i) {
-		struct move m = moves[i];
-		if (disambiguate(disamb, m.from)) {
-			memcpy(move, &m, sizeof(m));
-			return true;
-		}
+		move move = moves[i];
+		if (disambiguate(disamb, move_from(move)))
+			return move;
 	}
-	return false;
+	return 0;
 }
 
-int pgn_to_moves(const struct pgn_movelist *pgn_moves, struct move *moves)
+int pgn_to_moves(const struct pgn_movelist *pgn_moves, move *moves)
 {
 	int n = 0;
 	struct board board;
 	board_init(&board);
 
 	struct movegenc conf;
-	struct move move;
 	for (int i = 0; i < pgn_moves->len; ++i) {
 		struct pgn_move pgn_move = pgn_moves->data[i];
 		// white moves are even and black moves are odd, based on index
 		int disamb = santogenc(pgn_move.text, &conf, (i & 1));
-		bool found = find_move(&board, &conf, disamb, &move);
+		move move = find_move(&board, &conf, disamb);
 
-		if (found) {
+		if (move) {
 			++n;
 			moves[i] = move;
-			board_move(&board, &move);
+			board_move(&board, move);
 		}
 	}
 	return n;

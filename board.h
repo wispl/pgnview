@@ -67,14 +67,10 @@ enum castling {
 };
 
 struct board {
-	// index squares for piece id
-	enum piece_id squares[64];
-	// piece bitboards
-	u64 pieces[PIECE_MAX];
-	// color bitboards
-	u64 colors[COLOR_MAX];
-	// castling rights
-	enum castling castling;
+	enum piece_id squares[64]; // piece_id squares
+	u64 pieces[PIECE_MAX];     // piece bitboards
+	u64 colors[COLOR_MAX];     // color bitboards
+	enum castling castling;    // castling rights
 };
 
 #define pieces(board, piece, color) ((board)->pieces[(piece)] & (board)->colors[(color)])
@@ -86,8 +82,8 @@ void board_init(struct board *board);
 void board_put_piece(struct board *board, int square, enum piece_id id);
 void board_del_piece(struct board *board, int square);
 void board_move_piece(struct board *board, int from, int to);
-void board_move(struct board *board, struct move *move);
-void board_undo_move(struct board *board, struct move *move, enum piece_id captured);
+void board_move(struct board *board, move move);
+void board_undo_move(struct board *board, move move, enum piece_id captured);
 void board_print(struct board *board);
 
 #endif

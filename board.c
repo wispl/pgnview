@@ -88,47 +88,51 @@ void board_move_piece(struct board *board, int from, int to)
 	board->squares[to]   = id;
 }
 
-void board_move(struct board *board, struct move *move)
+void board_move(struct board *board, move move)
 {
-	if (move->movetype == QUIET) {
-		board_move_piece(board, move->from, move->to);
+	int from = move_from(move);
+	int to   = move_to(move);
+	if (move_is_castle(move)) {
+		bool kingside = to > from;
+		int king = from + ((kingside) ?  2 : -2);
+		int rook = to   + ((kingside) ? -2 :  3);
 
-		enum color color = piece_color(board->squares[move->from]);
-		enum piece piece = piece_type(board->squares[move->from]);
+		board_move_piece(board, from, king);
+		board_move_piece(board, to,   rook);
+	} else if (move_is_quiet(move)) {
+		board_move_piece(board, from, to);
+
+		enum color color = piece_color(board->squares[from]);
+		enum piece piece = piece_type(board->squares[from]);
 
 		if (piece == KING) {
 			board->castling &= ~(WHITE_BOTHSIDE << (color * 2));
 		} else if (piece == ROOK) {
-			enum castling mask = (move->from < move->to) ? QUEENSIDE : KINGSIDE;
+			enum castling mask = (from < to) ? QUEENSIDE : KINGSIDE;
 			board->castling &= mask & color;
 		}
-	} else if (move->movetype == CAPTURE) {
-		board_del_piece(board, move->to);
-		board_move_piece(board, move->from, move->to);
-	} else if (move->movetype == CASTLE) {
-		bool kingside = move->to > move->from;
-		int king = move->from + ((kingside) ?  2 : -2);
-		int rook = move->to   + ((kingside) ? -2 :  3);
-
-		board_move_piece(board, move->from, king);
-		board_move_piece(board, move->to,   rook);
+	} else if (move_is_capture(move)) {
+		board_del_piece(board, to);
+		board_move_piece(board, from, to);
 	}
 }
 
-void board_undo_move(struct board *board, struct move *move, enum piece_id captured)
+void board_undo_move(struct board *board, move move, enum piece_id captured)
 {
-	if (move->movetype == QUIET) {
-		board_move_piece(board, move->to, move->from);
-	} else if (move->movetype == CAPTURE) {
-		board_move_piece(board, move->to, move->from);
-		board_put_piece(board, move->to, captured);
-	} else if (move->movetype == CASTLE) {
-		bool kingside = move->to > move->from;
-		int king = move->from + ((kingside) ?  2 : -2);
-		int rook = move->to   + ((kingside) ? -2 :  3);
+	int from = move_from(move);
+	int to   = move_to(move);
+	if (move_is_castle(move)) {
+		bool kingside = to > from;
+		int king = from + ((kingside) ?  2 : -2);
+		int rook = to   + ((kingside) ? -2 :  3);
 
-		board_move_piece(board, king, move->from);
-		board_move_piece(board, rook, move->to);
+		board_move_piece(board, king, from);
+		board_move_piece(board, rook, to);
+	} else if (move_is_quiet(move)) {
+		board_move_piece(board, to, from);
+	} else if (move_is_capture(move)) {
+		board_move_piece(board, to, from);
+		board_put_piece(board, to, captured);
 	}
 }
 

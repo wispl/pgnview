@@ -53,6 +53,5 @@ int main(void)
 		"Nf3", "Be7", "Nxe5", "dxe5", "Qg4", "Kf8", "Rad1", "Bf6", "Bc5+",
 		"Kg8", "Nd5", "b6", "Nxf6#"
 	};
-	test_pgn("tests/test.pgn", tags, lengthof(tags),
-	         moves, lengthof(moves));
+	test_pgn("tests/test.pgn", tags, lengthof(tags), moves, lengthof(moves));
 }

@@ -45,15 +45,6 @@ static u64 neg_ray_attacks(int square, u64 occupied, enum lineattacks type)
 	return attacks ^ neg_ray(lineattacks[type][blocker], blocker);
 }
 
-static struct move make_move(enum movetype movetype, int from, int to)
-{
-	return (struct move) {
-		.movetype = movetype,
-		.from = from,
-		.to = to
-	};
-}
-
 static u64 knight_attacks_bb(int square)
 {
 	u64 target = square_bb(square);
@@ -115,15 +106,14 @@ static u64 attacks_bb(int square, u64 occupied, enum piece piece)
 }
 
 // TODO: handle en passant
-static struct move* generate_pawn_moves(struct board *board, struct move *moves,
-		                        struct movegenc *conf)
+static move* generate_pawn_moves(struct board *board, move *moves, struct movegenc *conf)
 {
-	enum movetype movetype = conf->movetype;
+	enum gentype movetype = conf->type;
 	enum color color = conf->color;
 	u64 target = conf->target;
 
-	u64 empty   = ~board->pieces[ALL];
-	u64 enemies =  board->colors[flip_color(color)];
+	u64 empty   = ~board->pieces[ALL] & target;
+	u64 enemies =  board->colors[flip_color(color)] & target;
 
 	enum direction up    	= (color == WHITE) ? NORTH      : SOUTH;
 	enum direction up_right = (color == WHITE) ? NORTH_EAST : SOUTH_WEST;
@@ -141,53 +131,46 @@ static struct move* generate_pawn_moves(struct board *board, struct move *moves,
 	if (movetype == QUIET) {
 		u64 b1 = shift(not_rank7_pawns, up) & empty;
 		u64 b2 = shift(shift(rank2_pawns, up), up) & empty;
-		b1 &= target;
-		b2 &= target;
 		
 		while (b1) {
 			int to = pop_lsb(&b1);
-			*moves++ = make_move(QUIET, to - up, to);
+			*moves++ = make_quiet(to - up, to);
 		}
 		while (b2) {
 			int to = pop_lsb(&b2);
-			*moves++ = make_move(QUIET, to - up - up, to);
+			*moves++ = make_quiet(to - up - up, to);
 		}
-	} else if (movetype == PROMOTION) {
+	} else if (movetype == PROMO_CAPTURE) {
 		u64 b1 = shift(rank7_pawns, up_right) & enemies;
 		u64 b2 = shift(rank7_pawns, up_left) & enemies;
-		u64 b3 = shift(rank7_pawns, up) & empty;
-		b1 &= target;
-		b2 &= target;
-		b3 &= target;
 
 		while (b1) {
 			int to = pop_lsb(&b1);
-			*moves++ = make_move(PROMOTION, to - up_right, to);
+			*moves++ = make_promotion(to - up_right, to, true, 0);
 		}
 
 		while (b2) {
 			int to = pop_lsb(&b2);
-			*moves++ = make_move(PROMOTION, to - up_left, to);
+			*moves++ = make_promotion(to - up_left, to, true, 0);
 		}
+	} else if (movetype == PROMOTION) {
+		u64 b1 = shift(rank7_pawns, up) & empty;
 
-		while (b3) {
-			int to = pop_lsb(&b3);
-			*moves++ = make_move(PROMOTION, to - up, to);
+		while (b1) {
+			int to = pop_lsb(&b1);
+			*moves++ = make_promotion(to - up, to, false, 0);
 		}
 	} else if (movetype == CAPTURE) {
-		// regular captures
 		u64 b1 = shift(not_rank7_pawns, up_right) & enemies;
 		u64 b2 = shift(not_rank7_pawns, up_left) & enemies;
-		b1 &= target;
-		b2 &= target;
 
 		while (b1) {
 			int to = pop_lsb(&b1);
-			*moves++ = make_move(CAPTURE, to - up_right, to);
+			*moves++ = make_capture(to - up_right, to);
 		}
 		while (b2) {
 			int to = pop_lsb(&b2);
-			*moves++ = make_move(CAPTURE, to - up_left, to);
+			*moves++ = make_capture(to - up_left, to);
 		}
 	}
 	return moves;
@@ -200,47 +183,42 @@ static u64 h_ray(int square, u64 occupied, bool is_negative)
 }
 
 // TODO: check for attacks on squares between rook and king
-static struct move* generate_castle_moves(struct board *board, struct move *moves,
-		                          struct movegenc *conf)
+static move* generate_castle_moves(struct board *board, move *moves, struct movegenc *conf)
 {
 	u64 king = (conf->color == WHITE) ? e1 : e8;
 	for (int i = 0; i < 2; ++i) {
 		if (can_castle(board, conf->color, i)) {
 			u64 bb = h_ray(king, board->pieces[ALL], i) & conf->target;
-			if (bb) {
-				*moves++ = make_move(CASTLE, king, pop_lsb(&bb));
-				// TODO: check if bb = 0, it should be
-			}
+			if (bb)
+				*moves++ = make_castle(king, pop_lsb(&bb));
 		}
 	}
 	return moves;
 }
 
-struct move* generate_moves(struct board *board, struct move *moves, struct movegenc *conf)
+move* generate_moves(struct board *board, move *moves, struct movegenc *conf)
 {
-	if (conf->piece == PAWN) {
+	if (conf->piece == PAWN)
 		return generate_pawn_moves(board, moves, conf);
-	}
 
-	if (conf->movetype == CASTLE) {
+	if (conf->type == CASTLE)
 		return generate_castle_moves(board, moves, conf);
-	}
 
-	assert(conf->movetype != PROMOTION);
+	assert(conf->type != PROMOTION && conf->type != PROMO_CAPTURE);
 
 	u64 pieces   =  pieces(board, conf->piece, conf->color);
 	u64 occupied =  board->pieces[ALL];
 	u64 empty    = ~occupied;
 	u64 enemies  =  board->colors[flip_color(conf->color)];
+	bool is_capture = (conf->type == CAPTURE);
+
 	while (pieces) {
 		int from = pop_lsb(&pieces);
 		u64 bb   = attacks_bb(from, occupied, conf->piece);
-		bb &= (conf->movetype == CAPTURE) ? enemies : empty;
-		bb &= conf->target;
+		bb &= ((is_capture) ? enemies : empty) & conf->target;
 
-		while (bb) {
-			*moves++ = make_move(conf->movetype, from, pop_lsb(&bb));
-		}
+		while (bb)
+			*moves++ = make_move(from, pop_lsb(&bb), is_capture, false, 0);
 	}
 	return moves;
 }

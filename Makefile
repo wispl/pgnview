@@ -26,6 +26,6 @@ test: $(TESTS)
 
 # TODO: use something else besides running and scanning for assertions
 # TODO: cache results? keep executable around?
-$(TESTS): tests/test_%.c: pgn_movelist.h array.h bitboard.h movegen.h move.h
+$(TESTS): tests/test_%.c: pgn_ext.h array.h bitboard.h movegen.h move.h
 	@$(CC) $@ -o $(basename $(notdir $@)) $(NO_GUI) $(LDFLAGS)
 	./$(basename $(notdir $@))

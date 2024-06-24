@@ -7,6 +7,6 @@
 // Converts a list of "struct pgn_move" to a list of "struct move", "moves"
 // must be large enough! (>= pgn_moves.len).
 // Returns the number of moves filled.
-int pgn_to_moves(const struct pgn_movelist *pgn_moves, struct move *moves);
+int pgn_to_moves(const struct pgn_movelist *pgn_moves, move *moves);
 
 #endif

@@ -4,14 +4,23 @@
 #include "board.h"
 #include "move.h"
 
+enum gentype {
+	QUIET,
+	CASTLE,
+	CAPTURE,
+	PROMOTION,
+	PROMO_CAPTURE
+};
+
 // Parameters to passed into generate_moves
 struct movegenc {
-	enum movetype movetype;	// type of move to generate
+	enum gentype type;	// type of move to generate
 	enum piece piece;	// piece to generate moves for
 	enum color color;	// color to generate moves for
-	u64 target;		// target bitboard
+	u64 target;		// targets bitboard
 };
 
 void init_lineattacks_table();
-struct move* generate_moves(struct board *board, struct move *moves, struct movegenc *conf);
+move* generate_moves(struct board *board, move *moves, struct movegenc *conf);
+
 #endif
