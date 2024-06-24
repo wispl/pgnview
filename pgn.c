@@ -246,8 +246,8 @@ static void tag(struct parser *parser)
 
 	if (parser->unhandled_error) {
 		fprintf(stderr, parser_err, parser->py, parser->px, "tag");
-		free(&tag.name);
-		free(&tag.desc);
+		free(tag.name);
+		free(tag.desc);
 		parser->unhandled_error = false;
 	} else {
 		array_push(&parser->pgn->tags, tag);
