@@ -23,6 +23,10 @@ typedef uint16_t move;
 #define move_to(move)            (((move) >> 6) & 0x3f)
 #define move_promo_piece(move)   (((move) >> 14) & 0x3)
 
+#define move_set_from(move, from)         ((move) |= ((from) & 0x3f))
+#define move_set_to(move, to)             ((move) |= (((to) & 0x3f) << 6))
+#define move_set_promo_piece(move, piece) ((move) |= (((piece) & 0x3) << 13))
+
 #define move_is_capture(move)    (((move) >> 12) & 1)
 #define move_is_promotion(move)  (((move) >> 13) & 1)
 #define move_is_quiet(move)      (!move_is_promotion((move)) && !move_is_capture((move)))
