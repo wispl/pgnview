@@ -97,6 +97,7 @@ void board_move(struct board *board, move move)
 {
 	int from = move_from(move);
 	int to   = move_to(move);
+	enum color color = piece_color(board->squares[from]);
 
 	// update castling rights
 	// king moved
@@ -124,7 +125,6 @@ void board_move(struct board *board, move move)
 	board_move_piece(board, from, to);
 
 	if (move_is_promotion(move)) {
-		enum color color = piece_color(board->squares[from]);
 		enum piece piece = move_promo_piece(move) + 1;
 		board_del_piece(board, to);
 		board_put_piece(board, to, make_piece(piece, color));
@@ -136,6 +136,7 @@ void board_undo_move(struct board *board, move move, enum piece_id captured)
 {
 	int from = move_from(move);
 	int to   = move_to(move);
+	enum color color = piece_color(board->squares[to]);
 
 	if (move_is_castle(move)) {
 		bool kingside = to > from;
@@ -148,7 +149,6 @@ void board_undo_move(struct board *board, move move, enum piece_id captured)
 	}
 
 	if (move_is_promotion(move)) {
-		enum color color = piece_color(board->squares[from]);
 		board_del_piece(board, to);
 		board_put_piece(board, to, make_piece(PAWN, color));
 	}
