@@ -1,6 +1,14 @@
 #ifndef PARSER_H
 #define PARSER_H
 
+enum pgn_result {
+	PGN_OK,
+	PGN_FILE_ERROR,
+	PGN_LEX_ERROR,
+	PGN_TAG_PARSE_ERROR,
+	PGN_MOVE_PARSE_ERROR,
+};
+
 struct pgn_tag {
 	char *name, *desc;
 };
@@ -20,7 +28,7 @@ struct pgn {
 	char result[8];		// result of the game
 };
 
-void pgn_read(struct pgn *pgn, char *filename);
+enum pgn_result pgn_read(struct pgn *pgn, char *filename);
 void pgn_free(struct pgn *pgn);
 
 #endif

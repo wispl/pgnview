@@ -60,6 +60,7 @@ struct token {
 
 // internal structure for sharing data between parsing functions
 struct parser {
+	enum pgn_result result;
 	// lexer
 	FILE *file;
 	struct token token;
@@ -298,6 +299,7 @@ static void tag(struct parser *parser)
 		free(tag.name);
 		free(tag.desc);
 		parser->unhandled_error = false;
+		parser->result = PGN_TAG_PARSE_ERROR;
 	} else {
 		vec_push(parser->pgn->tags, tag);
 	}
@@ -325,18 +327,19 @@ static void movetext(struct parser *parser)
 	if (parser->unhandled_error) {
 		fprintf(stderr, parser_err, parser->py, parser->px, "move");
 		parser->unhandled_error = false;
+		parser->result = PGN_MOVE_PARSE_ERROR;
 	} else {
 		vec_push(parser->pgn->moves, move);
 	}
 }
 
-// TODO: error codes
-void pgn_read(struct pgn* pgn, char* filename)
+enum pgn_result pgn_read(struct pgn* pgn, char* filename)
 {
 	// initialization
 	pgn->tags = 0;
 	pgn->moves = 0;
 	struct parser parser = {
+		.result = PGN_OK,
 		.file  = fopen(filename, "r"),
 		.last_char = ' ',
 		.y = 1,
@@ -344,9 +347,8 @@ void pgn_read(struct pgn* pgn, char* filename)
 		.pgn = pgn
 	};
 
-	if (parser.file == NULL) {
-		return;
-	}
+	if (parser.file == NULL)
+		return PGN_FILE_ERROR;
 
 	// parsing
 	next_token(&parser);
@@ -369,6 +371,7 @@ void pgn_read(struct pgn* pgn, char* filename)
 
 	// cleanup
 	fclose(parser.file);
+	return parser.result;
 }
 
 void pgn_free(struct pgn *pgn)

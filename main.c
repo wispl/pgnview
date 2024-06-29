@@ -178,13 +178,23 @@ void do_move(bool undo)
 int main(int argc, char **argv)
 {
 	if (argc < 2) {
-		printf("Please specify a file!\n");
+		fprintf(stderr, "Please specify a file!\n");
 		return 0;
 	}
 	init_lineattacks_table();
 	board_init(&state.board);
-	// TODO: handle read and file errors
-	pgn_read(&state.pgn, argv[1]);
+
+	// tags errors are fine, we are not doing anything with them
+	enum pgn_result pgn_res = pgn_read(&state.pgn, argv[1]);
+	if (pgn_res != PGN_OK) {
+		if (pgn_res == PGN_FILE_ERROR) {
+			fprintf(stderr, "Could not open %s for reading!\n", argv[1]);
+			return 0;
+		} else if (pgn_res == PGN_MOVE_PARSE_ERROR){
+			fprintf(stderr, "Errors while parsing moves, exiting!");
+			return 0;
+		}
+	}
 
 	// TODO: handle length mismatch
 	state.moves   = malloc_array(state.pgn.movecount, sizeof(move));
