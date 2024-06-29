@@ -25,7 +25,7 @@ typedef uint16_t move;
 
 #define move_set_from(move, from)         ((move) |= ((from) & 0x3f))
 #define move_set_to(move, to)             ((move) |= (((to) & 0x3f) << 6))
-#define move_set_promo_piece(move, piece) ((move) |= (((piece) & 0x3) << 13))
+#define move_set_promo_piece(move, piece) ((move) |= (((piece) & 0x3) << 14))
 
 #define move_is_capture(move)    (((move) >> 12) & 1)
 #define move_is_promotion(move)  (((move) >> 13) & 1)
