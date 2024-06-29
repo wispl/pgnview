@@ -105,6 +105,13 @@ static u64 attacks_bb(int square, u64 occupied, enum piece piece)
 	return 0ULL;
 }
 
+static move* all_promotions(move *moves, int from, int to, bool is_capture)
+{
+	for (int i = 0; i < 4; ++i)
+		*moves++ = make_promotion(from, to, is_capture, i);
+	return moves;
+}
+
 // TODO: handle en passant
 static move* generate_pawn_moves(struct board *board, move *moves, struct movegenc *conf)
 {
@@ -146,19 +153,19 @@ static move* generate_pawn_moves(struct board *board, move *moves, struct movege
 
 		while (b1) {
 			int to = pop_lsb(&b1);
-			*moves++ = make_promotion(to - up_right, to, true, 0);
+			moves = all_promotions(moves, to - up_right, to, true);
 		}
 
 		while (b2) {
 			int to = pop_lsb(&b2);
-			*moves++ = make_promotion(to - up_left, to, true, 0);
+			moves = all_promotions(moves, to - up_left, to, true);
 		}
 	} else if (movetype == PROMOTION) {
 		u64 b1 = shift(rank7_pawns, up) & empty;
 
 		while (b1) {
 			int to = pop_lsb(&b1);
-			*moves++ = make_promotion(to - up, to, false, 0);
+			moves = all_promotions(moves, to - up, to, false);
 		}
 	} else if (movetype == CAPTURE) {
 		u64 b1 = shift(not_rank7_pawns, up_right) & enemies;
