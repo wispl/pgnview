@@ -24,24 +24,24 @@ enum color {
 #define flip_color(color) ((color) ^ BLACK)
 
 enum piece {
-	KING,
-	QUEEN,
-	ROOK,
-	BISHOP,
-	KNIGHT,
 	PAWN,
+	KNIGHT,
+	BISHOP,
+	ROOK,
+	QUEEN,
+	KING,
 	ALL,
 	PIECE_MAX,
 };
 
 enum piece_id {
-	W_KING = KING, W_QUEEN, W_ROOK, W_BISHOP, W_KNIGHT, W_PAWN,
-	B_KING,        B_QUEEN, B_ROOK, B_BISHOP, B_KNIGHT, B_PAWN,
+	W_PAWN, W_KNIGHT, W_BISHOP, W_ROOK, W_QUEEN, W_KING,
+	B_PAWN, B_KNIGHT, B_BISHOP, B_ROOK, B_QUEEN, B_KING,
 	EMPTY,
 	PIECE_ID_MAX
 };
-#define piece_color(id) (!((id) < B_KING))
-#define piece_type(id)  ((id) - (piece_color((id)) * B_KING))
+#define piece_color(id) ((id) >= B_PAWN)
+#define piece_type(id)  ((id) - (piece_color((id)) * B_PAWN))
 
 enum castling {
 	// 0000
