@@ -25,6 +25,10 @@
 #define RIGHTX (LEFTX + COLS)
 #define RIGHTY (LEFTY + ROWS)
 
+#define LIGHT_COLOR      TB_WHITE
+#define DARK_COLOR       TB_BLACK
+#define HIGHLIGHT_COLOR  TB_BLUE
+
 // Converts bitboard coordinates to UI coordinates for termbox
 #define ui_x(x) ((x & 7) * CELLW + LEFTX)
 // Board is flipped due to bitboard
@@ -87,7 +91,7 @@ void highlight_square(int square)
 	char ch[7];
 	tb_utf8_unicode_to_char(ch, cell.ch);
 
-	draw_square(x, y, ch, TB_BLACK, TB_YELLOW);
+	draw_square(x, y, ch, DARK_COLOR, HIGHLIGHT_COLOR);
 }
 
 // TODO: investigate not drawing the whole board but only changes
@@ -102,9 +106,9 @@ void draw_board(struct board *board)
 			enum piece_id id = board->squares[square];
 			char *ch = piece_str[id];
 			if ((file + shift) & 1) {
-				draw_square(x, y, ch, TB_GREEN, TB_BLACK);
+				draw_square(x, y, ch, LIGHT_COLOR, DARK_COLOR);
 			} else {
-				draw_square(x, y, ch, TB_BLACK, TB_GREEN);
+				draw_square(x, y, ch, DARK_COLOR, LIGHT_COLOR);
 			}
 			x += CELLW;
 		}
@@ -136,7 +140,7 @@ void draw_moves(const struct pgn *pgn, int current)
 		}
 
 		char *str = (i < pgn->movecount) ? pgn->moves[i].text : " ";
-		tb_printf(x, y, (current == i) * TB_YELLOW, 0, "%-8s", str);
+		tb_printf(x, y, (current == i) * HIGHLIGHT_COLOR, 0, "%-8s", str);
 		x += 8;
 
 		// newline at black moves (odd index)
