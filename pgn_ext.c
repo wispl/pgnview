@@ -117,9 +117,9 @@ static void get_moveinfo(char *text, enum color color, struct moveinfo *info)
 	// promotions, for example, fxg8(=Q)
 	char *eq_start = strchr(text, '=');
 	if (eq_start) {
-		len -= 2;
 		info->conf.type = PROMOTION;
-		info->promo_piece = chrtopiece(text[len]);
+		info->promo_piece = chrtopiece(text[len - 1]);
+		len -= 2;
 	}
 
 	char *to = &text[len - 2];
@@ -152,11 +152,14 @@ static move find_move(struct board *board, struct moveinfo *info)
 
 	for (int i = 0; i < len; ++i) {
 		move move = moves[i];
-		if (disambiguate(info->hint, move_from(move))) {
-			if (move_is_promotion(move))
-				move_set_promo_piece(move, info->promo_piece - 1);
+		// Multiple promotion moves, but we already have the piece we
+		// want so set it manually and return early
+		if (move_is_promotion(move)) {
+			move_set_promo_piece(move, info->promo_piece - 1);
 			return move;
 		}
+		if (disambiguate(info->hint, move_from(move)))
+			return move;
 	}
 	return 0;
 }
