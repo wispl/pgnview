@@ -38,9 +38,11 @@ static inline int santoi(char *san)
 	return filetoi(san[0]) + ranktoi(san[1]);
 }
 
-// Extracts from, to, and piece type from a SAN with special characters removed
-// and returns the disambiguation square, rank or file. Disambiguation is
-// needed in cases where two or more pieces can reach the same square
+// Extracts from, to, and piece type from a SAN to a movegenc and returns the
+// disambiguation square, rank or file. Disambiguation is needed in cases where
+// two or more pieces can reach the same square. Note special characters like
+// 'x' for caputures or '=', '+', '#' are ignored as we only care about squares
+// here, not note movetype
 //
 // QUIET: 	e4, Nf6
 // CAPTURES:	exd4->ed4, Nxf6->Nf6
@@ -49,7 +51,7 @@ static int extract_san(char *text, int len, struct movegenc *conf)
 {
 	assert(len >= 2 && len <= 5);
 
-	// piece type is first char
+	// piece type is first char, lowercase means it is a pawn
 	conf->piece    = chrtopiece(text[0]);
 	// destination square occurs two chars from end
 	conf->target   = square_bb(santoi(&text[len - 2]));
@@ -58,7 +60,7 @@ static int extract_san(char *text, int len, struct movegenc *conf)
 	// Pawn moves: e5, d5 -> e5, d5, these don't need disambiguation
 	case 2: return -1;
 	// Non-ambiguous moves: Nf6, Bg6 -> Nf6, Bg6
-	// isupper is for pawn captures: exd4 -> (e)d4
+	// isupper is special case for pawn captures: exd4 -> (e)d4
 	// otherwise it is just a regular move/capture with no ambiguation
 	case 3: return isupper(text[0]) ? -1 : filetoi(text[0]);
 	// Ambiguous moves: Ngf6, R2f2 -> N(g)f6, R(2)f2
@@ -73,7 +75,10 @@ static int extract_san(char *text, int len, struct movegenc *conf)
 	return -1;
 }
 
-int santogenc(char *text, struct movegenc *conf, enum color color)
+// General wrapper for extract_san and handles special cases like castling,
+// promotion and mates, returns the disambiguation square and stores
+// information in movegenc.
+static int santogenc(char *text, struct movegenc *conf, enum color color)
 {
 	conf->color = color;
 
