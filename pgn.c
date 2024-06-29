@@ -275,7 +275,10 @@ static bool expect(struct parser *parser, enum token_type type)
 // copies the value of token to a buffer, the buffer must be freed
 static inline void copy_token_value(char **buffer, struct token *token)
 {
-	*buffer = malloc(token->len);
+	void *tmp = malloc(token->len);
+	if (tmp == NULL)
+		abort();
+	*buffer = tmp;
 	memcpy(*buffer, token->value, token->len);
 }
 
