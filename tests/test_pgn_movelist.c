@@ -1,11 +1,11 @@
-#include "../array.h"
 #include "../movegen.h"
 #include "../pgn.h"
 #include "../pgn_ext.h"
 
 #include <assert.h>
-#include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 static inline int ranktoi(char c)
 {
