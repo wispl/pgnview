@@ -67,7 +67,6 @@ struct parser {
 	int y, x;	// location of lexer cursor (syntax errors)
 
 	// parser
-	int error_buf_idx;
 	bool unhandled_error;
 	int py, px;	// location of parser cursor (parser errors)
 
@@ -340,7 +339,6 @@ void pgn_read(struct pgn* pgn, char* filename)
 	struct parser parser = {
 		.file  = fopen(filename, "r"),
 		.last_char = ' ',
-		.error_buf_idx = 0,
 		.y = 1,
 		.x = 1,
 		.pgn = pgn
