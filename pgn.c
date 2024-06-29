@@ -86,7 +86,13 @@ struct vec {
 
 #define containerof(ptr) ((struct vec *)((char *)(ptr) - offsetof(struct vec, buffer)))
 
-#define vec_free(vec)    (free(containerof((vec))))
+#define vec_free(vec)                             \
+	do {                                      \
+		if ((vec)) {                      \
+			free(containerof((vec))); \
+				(vec) = 0;        \
+		}                                 \
+	} while (0)
 
 #define vec_size(vec)    ((vec) ? containerof((vec))->size : 0)
 
