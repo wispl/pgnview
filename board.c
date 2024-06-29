@@ -23,6 +23,11 @@ static const char piece_str[PIECE_ID_MAX] = {
 	[EMPTY]    = '.',
 };
 
+static inline enum piece_id make_piece(enum piece piece, enum color color)
+{
+	return piece + (color * B_PAWN);
+}
+
 void board_init(struct board *board)
 {
 	board->colors[WHITE]  = rank_1 | rank_2;
@@ -117,6 +122,13 @@ void board_move(struct board *board, move move)
 		board_del_piece(board, to);
 
 	board_move_piece(board, from, to);
+
+	if (move_is_promotion(move)) {
+		enum color color = piece_color(board->squares[from]);
+		enum piece piece = move_promo_piece(move) + 1;
+		board_del_piece(board, to);
+		board_put_piece(board, to, make_piece(piece, color));
+	}
 }
 
 // TODO: regain castling rights?
@@ -133,6 +145,12 @@ void board_undo_move(struct board *board, move move, enum piece_id captured)
 		board_move_piece(board, king, from);
 		board_move_piece(board, rook, to);
 		return;
+	}
+
+	if (move_is_promotion(move)) {
+		enum color color = piece_color(board->squares[from]);
+		board_del_piece(board, to);
+		board_put_piece(board, to, make_piece(PAWN, color));
 	}
 
 	board_move_piece(board, to, from);

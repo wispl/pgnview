@@ -11,6 +11,16 @@
 #include <stdlib.h>
 #include <string.h>
 
+// Information needed to find a move based on SAN
+struct moveinfo {
+	// passed into generate_moves(), this helps eliminate most legal moves
+	struct movegenc conf;
+	// promoted piece if any
+	enum piece promo_piece;
+	// disambiguation hint, can be a square, file, or rank.
+	int hint;
+};
+
 static enum piece chrtopiece(char c)
 {
 	switch (c) {
@@ -39,7 +49,7 @@ static inline int santoi(char *san)
 }
 
 // Extracts from, to, and piece type from a SAN to a movegenc and returns the
-// disambiguation square, rank or file. Disambiguation is needed in cases where
+// disambiguation square, rank or file. Disambiguations are needed in cases where
 // two or more pieces can reach the same square. Note special characters like
 // 'x' for caputures or '=', '+', '#' are ignored as we only care about squares
 // here, not note movetype
@@ -75,41 +85,41 @@ static int extract_san(char *text, int len, struct movegenc *conf)
 	return -1;
 }
 
-// General wrapper for extract_san and handles special cases like castling,
-// promotion and mates, returns the disambiguation square and stores
-// information in movegenc.
-static int santogenc(char *text, struct movegenc *conf, enum color color)
+// Wrapper for extract_san, handles special cases like castling, promotion and
+// checks/mates.
+// Fills out 'info' with information parsed from text.
+static void get_moveinfo(char *text, enum color color, struct moveinfo *info)
 {
-	conf->color = color;
+	info->conf.color = color;
 
 	bool short_castle = (strcmp(text, "O-O") == 0);
 	bool long_castle  = (strcmp(text, "O-O-O") == 0);
 	if (short_castle || long_castle) {
-		conf->type     = CASTLE;
-		conf->piece    = KING;
-		conf->target   = (short_castle) ? h1 : a1;
+		info->conf.type    = CASTLE;
+		info->conf.piece   = KING;
+		info->conf.target  = (short_castle) ? h1 : a1;
 		// flip sides if black
-		conf->target  += (color * a8);
-		conf->target   = square_bb(conf->target);
-		return -1;
+		info->conf.target += (color * a8);
+		info->conf.target  = square_bb(info->conf.target);
+		info->hint = -1;
+		return;
 	}
 
 	int len = strlen(text);
 
 	// checks and mates
 	char end = text[len - 1];
-	if (end == '+' || end == '#') {
+	if (end == '+' || end == '#')
 		--len;
-	}
 
-	// captures
+	// captures and promotions
 	char* x_start  = strchr(text, 'x');
-	// promotions
 	char* eq_start = strchr(text, '=');
 
 	if (eq_start) {
 		len -= 2;
-		conf->type = PROMOTION;
+		info->conf.type = PROMOTION;
+		info->promo_piece = chrtopiece(text[len]);
 	}
 	if (x_start) {
 		len -= 1;
@@ -119,26 +129,28 @@ static int santogenc(char *text, struct movegenc *conf, enum color color)
 		text[i]     = text[i + 1];
 		text[i + 1] = text[i + 2];
 		text[i + 2] = '\0';
-		conf->type = CAPTURE;
+		info->conf.type = CAPTURE;
 		
 	} else {
-		conf->type = QUIET;
+		info->conf.type = QUIET;
 	}
 
-	return extract_san(text, len, conf);
+	info->hint = extract_san(text, len, &info->conf);
 }
 
-static bool disambiguate(int disamb, int from)
+// Checks if a file, a rank, or both file or rank matches 'from' based on
+// 'disamb', the disambiguation.
+static bool disambiguate(int hint, int from)
 {
-	return disamb == from
-	    || (disamb < 8 && disamb == (from & 7))
-	    || disamb == (from / 8);
+	return hint == from
+	    || (hint < 8 && hint == (from & 7))
+	    || hint == (from / 8);
 }
 
-static move find_move(struct board *board, struct movegenc *conf, int disamb)
+static move find_move(struct board *board, struct moveinfo *info)
 {
 	move moves[16];
-	move *last = generate_moves(board, moves, conf);
+	move *last = generate_moves(board, moves, &info->conf);
 	int len = last - moves;
 
 	if (len == 1)
@@ -146,8 +158,11 @@ static move find_move(struct board *board, struct movegenc *conf, int disamb)
 
 	for (int i = 0; i < len; ++i) {
 		move move = moves[i];
-		if (disambiguate(disamb, move_from(move)))
+		if (disambiguate(info->hint, move_from(move))) {
+			if (move_is_promotion(move))
+				move_set_promo_piece(move, info->promo_piece - 1);
 			return move;
+		}
 	}
 	return 0;
 }
@@ -158,12 +173,12 @@ int pgn_to_moves(const struct pgn *pgn, move *moves)
 	struct board board;
 	board_init(&board);
 
-	struct movegenc conf;
+	struct moveinfo info;
 	for (int i = 0; i < pgn->movecount; ++i) {
-		struct pgn_move pgn_move = pgn->moves[i];
-		// white moves are even and black moves are odd, based on index
-		int disamb = santogenc(pgn_move.text, &conf, (i & 1));
-		move move = find_move(&board, &conf, disamb);
+		// white moves are even and black moves are odd, 0-based index
+		enum color color = (i & 1);
+		get_moveinfo(pgn->moves[i].text, color, &info);
+		move move = find_move(&board, &info);
 
 		if (move) {
 			++n;
