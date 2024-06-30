@@ -19,9 +19,16 @@ enum lineattacks {
 // indexed by lineattacks[diagonal|antidiagonal|horizontal|vertcal][square]
 // and gives the respective bitboard for each lineattack for the square
 static u64 lineattacks[4][64];
+static bool initialized = false;
+
+bool attacks_table_initilized()
+{
+	return initialized;
+}
 
 void init_lineattacks_table()
 {
+	initialized = true;
 	for (int i = 0; i < 64; ++i) {
 		lineattacks[DIAGONAL][i]     = diagonal(i);
 		lineattacks[ANTIDIAGONAL][i] = antidiagonal(i);
@@ -205,6 +212,8 @@ static move* generate_castle_moves(struct board *board, move *moves, struct move
 
 move* generate_moves(struct board *board, move *moves, struct movegenc *conf)
 {
+	assert(initialized == true);
+
 	if (conf->piece == PAWN)
 		return generate_pawn_moves(board, moves, conf);
 

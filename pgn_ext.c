@@ -166,6 +166,9 @@ static move find_move(struct board *board, struct moveinfo *info)
 
 int pgn_to_moves(const struct pgn *pgn, move *moves)
 {
+	if (!attacks_table_initilized())
+		init_lineattacks_table();
+
 	int n = 0;
 	struct board board;
 	board_init(&board);

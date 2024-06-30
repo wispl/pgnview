@@ -20,6 +20,7 @@ struct movegenc {
 	u64 target;		// targets bitboard
 };
 
+bool attacks_table_initilized();
 void init_lineattacks_table();
 move* generate_moves(struct board *board, move *moves, struct movegenc *conf);
 

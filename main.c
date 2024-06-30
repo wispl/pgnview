@@ -1,6 +1,5 @@
 #include "board.h"
 #include "move.h"
-#include "movegen.h"
 #include "pgn.h"
 #include "pgn_ext.h"
 
@@ -185,7 +184,6 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Please specify a file!\n");
 		return 0;
 	}
-	init_lineattacks_table();
 	board_init(&state.board);
 
 	// tags errors are fine, we are not doing anything with them

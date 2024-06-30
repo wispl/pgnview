@@ -1,4 +1,3 @@
-#include "../movegen.h"
 #include "../pgn.h"
 #include "../pgn_ext.h"
 
@@ -50,7 +49,6 @@ void test_pgn_movelist(char *file, char* orig[], char* to[])
 
 int main(void)
 {
-	init_lineattacks_table();
 	char *orig[] = {
 		"e4", "e5", "Nf3", "d6", "d4", "exd4", "Nxd4", "Nc6", "Nc3", "a6",
 		"Bc4", "h6", "O-O", "Nge7", "Be3", "Ng6", "Qf3", "Nce5", "Qe2", "Nxc4",

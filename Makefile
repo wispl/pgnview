@@ -11,7 +11,7 @@ TESTS := $(wildcard tests/test_*.c)
 pgncat: $(OBJS)
 	$(CC) -o pgncat $(OBJS) $(LDFLAGS)
 
-main.o: termbox2.h board.h move.h movegen.h pgn.h pgn_ext.h
+main.o: termbox2.h board.h move.h pgn.h pgn_ext.h
 pgn_ext.o: pgn_ext.h board.h move.h movegen.h pgn.h
 movegen.o: movegen.h bitboard.h board.h move.h
 board.o: board.h bitboard.h move.h
