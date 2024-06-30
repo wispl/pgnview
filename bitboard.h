@@ -74,9 +74,7 @@ u64 shift(u64 bb, enum direction dir);
 #define north_west(b) ((b << 7) & ~file_h)
 #define south_west(b) ((b >> 9) & ~file_h)
 
-// pretty print bitboard and squares
 void print_bitboard(u64 bitboard);
-void print_square(int square);
 
 static inline int lsb(u64 bb)
 {

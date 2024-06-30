@@ -32,12 +32,3 @@ void print_bitboard(u64 bitboard)
 	}
 	printf("\n   a b c d e f g h\n");
 }
-
-void print_square(int square)
-{
-	char str[3];
-	str[0] = 'a' + (square & 7);
-	str[1] = '1' + (square / 8);
-	str[2] = '\0';
-	printf("%s", str);
-}
