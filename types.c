@@ -6,22 +6,6 @@
 #include <stdio.h>
 #include <string.h>
 
-static const char piece_str[PIECE_ID_MAX] = {
-	[W_KING]   = 'K',
-	[W_QUEEN]  = 'Q',
-	[W_ROOK]   = 'R',
-	[W_BISHOP] = 'B',
-	[W_KNIGHT] = 'N',
-	[W_PAWN]   = 'P',
-	[B_KING]   = 'k',
-	[B_QUEEN]  = 'q',
-	[B_ROOK]   = 'r',
-	[B_BISHOP] = 'b',
-	[B_KNIGHT] = 'n',
-	[B_PAWN]   = 'p',
-	[EMPTY]    = '.',
-};
-
 static inline enum piece_id make_piece(enum piece piece, enum color color)
 {
 	return piece + (color * B_PAWN);
@@ -156,19 +140,4 @@ void board_undo_move(struct board *board, move move, enum piece_id captured)
 
 	if (move_is_capture(move))
 		board_put_piece(board, to, captured);
-}
-
-void board_print(struct board *board)
-{
-	for (int rank = 7; rank >= 0; --rank) {
-		for (int file = 0; file < 8; ++file) {
-			int square = rank * 8 + file;
-			if (!file) {
-				printf("%d ", rank + 1);
-			}
-			printf(" %c", piece_str[board->squares[square]]);
-		}
-		printf("\n");
-	}
-	printf("\n   a b c d e f g h\n");
 }

@@ -115,6 +115,5 @@ void board_del_piece(struct board *board, int square);
 void board_move_piece(struct board *board, int from, int to);
 void board_move(struct board *board, move move);
 void board_undo_move(struct board *board, move move, enum piece_id captured);
-void board_print(struct board *board);
 
 #endif // TYPES_H
