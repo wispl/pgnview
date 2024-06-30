@@ -1,8 +1,7 @@
 #include "movegen.h"
 
 #include "bitboard.h"
-#include "board.h"
-#include "move.h"
+#include "types.h"
 
 #include <assert.h>
 #include <string.h>

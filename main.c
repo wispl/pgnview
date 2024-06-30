@@ -1,5 +1,4 @@
-#include "board.h"
-#include "move.h"
+#include "types.h"
 #include "pgn.h"
 #include "pgn_ext.h"
 

@@ -1,8 +1,7 @@
 #ifndef MOVEGEN_H
 #define MOVEGEN_H
 
-#include "board.h"
-#include "move.h"
+#include "types.h"
 
 enum gentype {
 	QUIET,

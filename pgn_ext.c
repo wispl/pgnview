@@ -1,9 +1,8 @@
 #include "pgn_ext.h"
 
-#include "board.h"
-#include "move.h"
 #include "movegen.h"
 #include "pgn.h"
+#include "types.h"
 
 #include <assert.h>
 #include <stdbool.h>
