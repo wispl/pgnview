@@ -3,7 +3,6 @@
 
 #include "bitboard.h"
 
-#include <stdbool.h>
 #include <stdint.h>
 
 // 6 bits for from square

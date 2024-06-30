@@ -3,6 +3,8 @@
 
 #include "types.h"
 
+#include <stdbool.h>
+
 enum gentype {
 	QUIET,
 	CASTLE,
