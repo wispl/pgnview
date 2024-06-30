@@ -33,7 +33,6 @@ typedef uint16_t move;
 #define move_is_quiet(move)      (!move_is_promotion((move)) && !move_is_capture((move)))
 #define move_is_castle(move)     (move_is_quiet((move)) && move_promo_piece((move)))
 
-
 // Little endian ranked-file ordered square mapping
 enum squares {
 	a1, b1, c1, d1, e1, f1, g1, h1,
@@ -73,26 +72,18 @@ enum piece_id {
 #define piece_color(id) ((id) >= B_PAWN)
 #define piece_type(id)  ((id) - (piece_color((id)) * B_PAWN))
 
+// castling rights using bits
+// (WHITE_KINGSIDE)(WHITE_QUEENSIDE)(BLACK_KINGSIDE)(BLACK_QUEENSIDE)
 enum castling {
-	// 0000
 	NO_CASTLING,
-	// 0001
 	WHITE_KINGSIDE  = 1,
-	// 0010
 	WHITE_QUEENSIDE = WHITE_KINGSIDE << 1,
-	// 0011
 	WHITE_BOTHSIDE  = WHITE_KINGSIDE | WHITE_QUEENSIDE,
-	// 0100
 	BLACK_KINGSIDE  = WHITE_KINGSIDE << 2,
-	// 1000
 	BLACK_QUEENSIDE = WHITE_KINGSIDE << 3,
-	// 1100
 	BLACK_BOTHSIDE  = BLACK_KINGSIDE | BLACK_QUEENSIDE,
-	// 0101
 	KINGSIDE = WHITE_KINGSIDE | BLACK_KINGSIDE,
-	// 1010
 	QUEENSIDE = WHITE_QUEENSIDE | BLACK_QUEENSIDE,
-	// 1111
 	ANY_CASTLING = WHITE_BOTHSIDE | BLACK_BOTHSIDE
 };
 
