@@ -5,11 +5,14 @@ LDFLAGS += -fsanitize=address,undefined
 # chess related object files, no gui
 CHESS_OBJS = bitboard.o types.o movegen.o pgn.o pgn_ext.o
 OBJS = $(CHESS_OBJS) termbox2.o main.o
+EXE = pgnview
 
 TESTS := $(wildcard tests/test_*.c)
 
-pgncat: $(OBJS)
-	$(CC) -o pgncat $(OBJS) $(LDFLAGS)
+all: pgnview
+
+pgnview: $(OBJS)
+	$(CC) -o $(EXE) $(OBJS) $(LDFLAGS)
 
 main.o: termbox2.h types.h pgn.h pgn_ext.h
 pgn_ext.o: pgn_ext.h types.h movegen.h pgn.h
@@ -22,7 +25,7 @@ termbox2.o: termbox2.h
 .Phony: clean test $(TESTS)
 
 clean:
-	rm -f pgncat test_* $(OBJS)
+	rm -f $(EXE) test_* $(OBJS)
 
 test: $(TESTS)
 
