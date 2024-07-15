@@ -1,11 +1,11 @@
 CC = cc
 
 CFLAGS += -Wextra -Wall -Wdouble-promotion
-pgnview: CFLAGS += -fsanitize=address,undefined -g3
-pgnview: LDFLAGS += -fsanitize=address,undefined -g3
+pgnview test: CFLAGS += -fsanitize=address,undefined -g3
+release: CFLAGS += -O2 -g
 
 LDFLAGS += -g
-release: CFLAGS += -O2 -g
+pgnview test: LDFLAGS += -fsanitize=address,undefined -g3
 release: LDFLAGS += -g
 
 CHESS_OBJS = bitboard.o board.o movegen.o
@@ -18,6 +18,7 @@ RELEASE_EXE = $(RELEASE_DIR)/$(EXE)
 
 TESTS := $(wildcard tests/test_*.c)
 
+.Phony: all
 all: pgnview
 
 pgnview: $(OBJS)
@@ -40,15 +41,15 @@ $(RELEASE_DIR)/%.o: %.c
 mkdir:
 	@mkdir -p $(RELEASE_DIR)
 
-.Phony: clean test $(TESTS)
-
+.Phony: clean
 clean:
 	rm -rf $(RELEASE_DIR) $(EXE) test_* $(OBJS)
 
+.Phony: test $(TESTS)
 test: $(TESTS)
 
 # TODO: use something else besides running and scanning for assertions
 # TODO: cache results? keep executable around?
-$(TESTS): tests/test_%.c: $(CHESS_OBJS)
-	@$(CC) $@ -o $(basename $(notdir $@)) $(CHESS_OBJS) $(LDFLAGS)
+$(TESTS): tests/test_%.c: $(PGN_OBJS) $(CHESS_OBJS)
+	@$(CC) $@ -o $(basename $(notdir $@)) $(PGN_OBJS) $(CHESS_OBJS) $(LDFLAGS)
 	./$(basename $(notdir $@))
