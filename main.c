@@ -1,4 +1,4 @@
-#include "types.h"
+#include "chess.h"
 #include "pgn.h"
 #include "pgn_ext.h"
 

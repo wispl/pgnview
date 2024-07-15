@@ -3,7 +3,7 @@ CFLAGS += -Wextra -Wall -Wdouble-promotion
 LDFLAGS += -g
 
 # chess related object files, no gui
-CHESS_OBJS = bitboard.o types.o movegen.o pgn.o pgn_ext.o
+CHESS_OBJS = bitboard.o board.o movegen.o pgn.o pgn_ext.o
 OBJS = $(CHESS_OBJS) termbox2.o main.o
 EXE = pgnview
 
@@ -19,12 +19,12 @@ all: pgnview
 pgnview: $(OBJS)
 	$(CC) -o $(EXE) $(OBJS) $(LDFLAGS)
 
-main.o: termbox2.h types.h pgn.h pgn_ext.h
-pgn_ext.o: pgn_ext.h types.h pgn.h
-movegen.o: types.h
-types.o: types.h
+main.o: termbox2.h chess.h pgn.h pgn_ext.h
+pgn_ext.o: pgn_ext.h chess.h pgn.h
+movegen.o: chess.h
+board.o: chess.h
 pgn.o: pgn.h
-bitboard.o: types.h
+bitboard.o: chess.h
 termbox2.o: termbox2.h
 
 release: CFLAGS += -O2 -g

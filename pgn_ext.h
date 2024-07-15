@@ -2,7 +2,7 @@
 #define PGN_EXT_H
 
 #include "pgn.h"
-#include "types.h"
+#include "chess.h"
 
 // Converts a list of "struct pgn_move" to a list of "struct move", "moves"
 // must be large enough! (>= pgn_moves.len).

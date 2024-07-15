@@ -1,4 +1,4 @@
-#include "types.h"
+#include "chess.h"
 
 #include <stdbool.h>
 #include <stdio.h>
