@@ -1,4 +1,4 @@
-#include "bitboard.h"
+#include "types.h"
 
 #include <stdio.h>
 

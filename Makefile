@@ -21,10 +21,10 @@ pgnview: $(OBJS)
 
 main.o: termbox2.h types.h pgn.h pgn_ext.h
 pgn_ext.o: pgn_ext.h types.h movegen.h pgn.h
-movegen.o: movegen.h bitboard.h types.h
-types.o: types.h bitboard.h
+movegen.o: movegen.h types.h
+types.o: types.h
 pgn.o: pgn.h
-bitboard.o: bitboard.h
+bitboard.o: types.h
 termbox2.o: termbox2.h
 
 release: CFLAGS += -O2 -g

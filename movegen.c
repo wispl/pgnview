@@ -1,6 +1,5 @@
 #include "movegen.h"
 
-#include "bitboard.h"
 #include "types.h"
 
 #include <assert.h>

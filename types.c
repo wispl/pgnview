@@ -1,7 +1,5 @@
 #include "types.h"
 
-#include "bitboard.h"
-
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>

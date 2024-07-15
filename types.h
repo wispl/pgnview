@@ -1,37 +1,19 @@
 #ifndef TYPES_H
 #define TYPES_H
 
-#include "bitboard.h"
-
 #include <stdint.h>
 
-// 6 bits for from square
-// 6 bits for to square
-// 1 bit for capture flag
-// 1 bit for promotion flag
-// 2 bits for special flags (promo piece or castling)
-typedef uint16_t move;
+// The three main types in this file are bitboards, boards, and moves.
+// Boards and moves are more userfacing than bitboards. Boards are complex,
+// and represent the state of a chess position at any point.
 
-#define make_move(from, to, capture, promo, special) \
-	((from) + ((to) << 6) + ((capture) << 12) + ((promo) << 13) + ((special) << 14))
-#define make_quiet(from, to) (make_move((from), (to), false, false, 0))
-#define make_capture(from, to) (make_move((from), (to), true, false, 0))
-#define make_castle(from, to) (make_move((from), (to), false, false, true))
-#define make_promotion(from, to, is_capture, piece) \
-	(make_move((from), (to), (is_capture), true, (piece)))
+///
+/// Bitboards
+///
 
-#define move_from(move)          ((move) & 0x3f)
-#define move_to(move)            (((move) >> 6) & 0x3f)
-#define move_promo_piece(move)   (((move) >> 14) & 0x3)
-
-#define move_set_from(move, from)         ((move) |= ((from) & 0x3f))
-#define move_set_to(move, to)             ((move) |= (((to) & 0x3f) << 6))
-#define move_set_promo_piece(move, piece) ((move) |= (((piece) & 0x3) << 14))
-
-#define move_is_capture(move)    (((move) >> 12) & 1)
-#define move_is_promotion(move)  (((move) >> 13) & 1)
-#define move_is_quiet(move)      (!move_is_promotion((move)) && !move_is_capture((move)))
-#define move_is_castle(move)     (move_is_quiet((move)) && move_promo_piece((move)))
+// Main type used for bitboards, the 64 bits is enough to represent all 64
+// squares of a board to indicate occupancy.
+typedef unsigned long long u64;
 
 // Little endian ranked-file ordered square mapping
 enum squares {
@@ -44,6 +26,148 @@ enum squares {
 	a7, b7, c7, d7, e7, f7, g7, h7,
 	a8, b8, c8, d8, e8, f8, g8, h8
 };
+
+// Creates bitboard from a square
+#define square_bb(square) (1ULL << (square))
+void print_bitboard(u64 bitboard);
+
+// TODO: these should probably be uppercase
+// File and rank constants for bitboards
+#define file_a 0x0101010101010101ULL
+#define file_b (file_a << 1)
+#define file_c (file_a << 2)
+#define file_d (file_a << 3)
+#define file_e (file_a << 4)
+#define file_f (file_a << 5)
+#define file_g (file_a << 6)
+#define file_h (file_a << 7)
+
+#define rank_1 0xFFULL
+#define rank_2 (rank_1 << (8 * 1))
+#define rank_3 (rank_1 << (8 * 2))
+#define rank_4 (rank_1 << (8 * 3))
+#define rank_5 (rank_1 << (8 * 4))
+#define rank_6 (rank_1 << (8 * 5))
+#define rank_7 (rank_1 << (8 * 6))
+#define rank_8 (rank_1 << (8 * 7))
+
+// a1-h8 diagonal
+#define MAIN_DIAGONAL      0x8040201008040201ULL
+// a8-h1 diagonal
+#define MAIN_ANTIDIAGONAL  0x0102040810204080ULL
+
+// rank, file, diagonal and antidiagonal associated with the square
+#define rank(square) (0xFFULL << ((square) & 56))
+
+#define file(square) (0x0101010101010101ULL << ((square) & 7))
+
+static inline u64 diagonal(int square)
+{
+	int diag = (square & 7) - (square >> 3);
+	return diag >= 0 ? MAIN_DIAGONAL >> diag * 8 : MAIN_DIAGONAL << -diag * 8;
+}
+
+static inline u64 antidiagonal(int square)
+{
+	int diag = 7 - (square & 7) - (square >> 3);
+	return diag >= 0 ? MAIN_ANTIDIAGONAL >> diag * 8 : MAIN_ANTIDIAGONAL << -diag * 8;
+}
+
+// gets positive or negative portion of rank, file, diagonal, or antidiagonal
+#define pos_ray(line, square) ((line) & (-2ULL << (square)))
+#define neg_ray(line, square) ((line) & ((1ULL << (square)) - 1))
+
+enum direction {
+    NORTH = 8,
+    EAST  = 1,
+    SOUTH = -NORTH,
+    WEST  = -EAST,
+    NORTH_EAST = NORTH + EAST,
+    SOUTH_EAST = SOUTH + EAST,
+    SOUTH_WEST = SOUTH + WEST,
+    NORTH_WEST = NORTH + WEST
+};
+
+// shift function and macros
+u64 shift(u64 bb, enum direction dir);
+#define north(b)      ((b << 8))
+#define south(b)      ((b >> 8))
+#define east(b)       ((b << 1) & ~file_a)
+#define north_east(b) ((b << 9) & ~file_a)
+#define south_east(b) ((b >> 7) & ~file_a)
+#define west(b)       ((b >> 1) & ~file_h)
+#define north_west(b) ((b << 7) & ~file_h)
+#define south_west(b) ((b >> 9) & ~file_h)
+
+// Bit scan and manipulation functions
+static inline int lsb(u64 bb)
+{
+#if   defined(__GNUC__)
+	return (int) __builtin_ctzll(bb);
+#elif defined(_MSC_VER)
+	unsigned long i;
+	_BitScanForward64(&i, bb);
+	return i;
+#else
+	#error "Compiler not supported"
+#endif
+}
+
+static inline int msb(u64 bb)
+{
+#if   defined(__GNUC__)
+	return (int) 63 ^ __builtin_clzll(bb);
+#elif defined(_MSC_VER)
+	unsigned long i;
+	_BitScanReverse64(&i, bb);
+	return i;
+#else
+	#error "Compiler not supported"
+#endif
+}
+
+static inline int pop_lsb(u64 *bb)
+{
+	int i = lsb(*bb);
+	*bb &= *bb - 1;
+	return i;
+}
+
+///
+/// Moves
+///
+
+// 6 bits for from square
+// 6 bits for to square
+// 1 bit for capture flag
+// 1 bit for promotion flag
+// 2 bits for special flags (promo piece or castling)
+typedef uint16_t move;
+
+#define make_move(from, to, capture, promo, special) \
+	((from) + ((to) << 6) + ((capture) << 12) + ((promo) << 13) + ((special) << 14))
+#define make_quiet(from, to)	(make_move((from), (to), false, false, 0))
+#define make_capture(from, to)	(make_move((from), (to), true, false, 0))
+#define make_castle(from, to)	(make_move((from), (to), false, false, true))
+#define make_promotion(from, to, is_capture, piece) \
+	(make_move((from), (to), (is_capture), true, (piece)))
+
+#define move_from(move)		((move) & 0x3f)
+#define move_to(move)		(((move) >> 6) & 0x3f)
+#define move_promo_piece(move)	(((move) >> 14) & 0x3)
+
+#define move_set_from(move, from)         ((move) |= ((from) & 0x3f))
+#define move_set_to(move, to)             ((move) |= (((to) & 0x3f) << 6))
+#define move_set_promo_piece(move, piece) ((move) |= (((piece) & 0x3) << 14))
+
+#define move_is_capture(move)    (((move) >> 12) & 1)
+#define move_is_promotion(move)  (((move) >> 13) & 1)
+#define move_is_quiet(move)      (!move_is_promotion((move)) && !move_is_capture((move)))
+#define move_is_castle(move)     (move_is_quiet((move)) && move_promo_piece((move)))
+
+///
+/// Board
+///
 
 enum color {
 	WHITE,
