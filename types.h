@@ -1,6 +1,7 @@
 #ifndef TYPES_H
 #define TYPES_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 // The three main types in this file are bitboards, boards, and moves.
@@ -29,6 +30,7 @@ enum squares {
 
 // Creates bitboard from a square
 #define square_bb(square) (1ULL << (square))
+
 void print_bitboard(u64 bitboard);
 
 // TODO: these should probably be uppercase
@@ -229,5 +231,29 @@ void board_del_piece(struct board *board, int square);
 void board_move_piece(struct board *board, int from, int to);
 void board_move(struct board *board, move move);
 void board_undo_move(struct board *board, move move, enum piece_id captured);
+
+///
+/// Move Generation
+///
+
+enum gentype {
+	QUIET,
+	CASTLE,
+	CAPTURE,
+	PROMOTION,
+	PROMO_CAPTURE
+};
+
+// Parameters to passed into generate_moves
+struct movegenc {
+	enum gentype type;	// type of move to generate
+	enum piece piece;	// piece to generate moves for
+	enum color color;	// color to generate moves for
+	u64 target;		// targets bitboard
+};
+
+bool attacks_table_initilized();
+void init_lineattacks_table();
+move* generate_moves(struct board *board, move *moves, struct movegenc *conf);
 
 #endif // TYPES_H

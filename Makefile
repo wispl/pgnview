@@ -20,8 +20,8 @@ pgnview: $(OBJS)
 	$(CC) -o $(EXE) $(OBJS) $(LDFLAGS)
 
 main.o: termbox2.h types.h pgn.h pgn_ext.h
-pgn_ext.o: pgn_ext.h types.h movegen.h pgn.h
-movegen.o: movegen.h types.h
+pgn_ext.o: pgn_ext.h types.h pgn.h
+movegen.o: types.h
 types.o: types.h
 pgn.o: pgn.h
 bitboard.o: types.h
