@@ -1,22 +1,34 @@
-#ifndef TYPES_H
-#define TYPES_H
+#ifndef CHESS_H
+#define CHESS_H
 
 #include <stdbool.h>
 #include <stdint.h>
 
-// The three main types in this file are bitboards, boards, and moves.
-// Boards and moves are more userfacing than bitboards. Boards are complex,
-// and represent the state of a chess position at any point.
+// This file contains chess related methods and structure. The three main structs
+// are bitboard, board, and move.
+//
+// Bitboards are a compact representation of the chess board using 64 bits.
+// They encode information only about occupancy.
+//
+// Moves encode various information about a single ply (half turn).
+//
+// A board represent information and state about a position.
+//
+// movegenc serves as an auxillary struct for generating moves for a given
+// position.
+//
+// Currently, the implementation here generates pseudo-legal moves,
+// which means the moves generated do NOT ensure the king is in check, as
+// opposed to legal moves which ensure the king is not in check and that the
+// move is legal.
 
-///
-/// Bitboards
-///
+// Module bitboard.c
 
-// Main type used for bitboards, the 64 bits is enough to represent all 64
-// squares of a board to indicate occupancy.
 typedef unsigned long long u64;
 
-// Little endian ranked-file ordered square mapping
+// Little endian ranked-file ordered square mapping.
+// Note the mapping determines implementations of bit manipulation functions,
+// having this rank based order allows for easy shifting of pawns.
 enum squares {
 	a1, b1, c1, d1, e1, f1, g1, h1,
 	a2, b2, c2, d2, e2, f2, g2, h2,
@@ -28,7 +40,7 @@ enum squares {
 	a8, b8, c8, d8, e8, f8, g8, h8
 };
 
-// Creates bitboard from a square
+// Creates a bitboard from a square.
 #define square_bb(square) (1ULL << (square))
 
 void print_bitboard(u64 bitboard);
@@ -58,7 +70,7 @@ void print_bitboard(u64 bitboard);
 // a8-h1 diagonal
 #define MAIN_ANTIDIAGONAL  0x0102040810204080ULL
 
-// rank, file, diagonal and antidiagonal associated with the square
+// Gets the rank, file, diagonal and antidiagonal associated with the square.
 #define rank(square) (0xFFULL << ((square) & 56))
 
 #define file(square) (0x0101010101010101ULL << ((square) & 7))
@@ -75,7 +87,7 @@ static inline u64 antidiagonal(int square)
 	return diag >= 0 ? MAIN_ANTIDIAGONAL >> diag * 8 : MAIN_ANTIDIAGONAL << -diag * 8;
 }
 
-// gets positive or negative portion of rank, file, diagonal, or antidiagonal
+// Gets positive or negative portion of rank, file, diagonal, or antidiagonal.
 #define pos_ray(line, square) ((line) & (-2ULL << (square)))
 #define neg_ray(line, square) ((line) & ((1ULL << (square)) - 1))
 
@@ -90,7 +102,7 @@ enum direction {
     NORTH_WEST = NORTH + WEST
 };
 
-// shift function and macros
+// Shift function and macros
 u64 shift(u64 bb, enum direction dir);
 #define north(b)      ((b << 8))
 #define south(b)      ((b >> 8))
@@ -101,7 +113,7 @@ u64 shift(u64 bb, enum direction dir);
 #define north_west(b) ((b << 7) & ~file_h)
 #define south_west(b) ((b >> 9) & ~file_h)
 
-// Bit scan and manipulation functions
+// Bit scan and bit manipulation functions
 static inline int lsb(u64 bb)
 {
 #if   defined(__GNUC__)
@@ -135,10 +147,6 @@ static inline int pop_lsb(u64 *bb)
 	return i;
 }
 
-///
-/// Moves
-///
-
 // 6 bits for from square
 // 6 bits for to square
 // 1 bit for capture flag
@@ -167,10 +175,6 @@ typedef uint16_t move;
 #define move_is_quiet(move)      (!move_is_promotion((move)) && !move_is_capture((move)))
 #define move_is_castle(move)     (move_is_quiet((move)) && move_promo_piece((move)))
 
-///
-/// Board
-///
-
 enum color {
 	WHITE,
 	BLACK,
@@ -198,7 +202,7 @@ enum piece_id {
 #define piece_color(id) ((id) >= B_PAWN)
 #define piece_type(id)  ((id) - (piece_color((id)) * B_PAWN))
 
-// castling rights using bits
+// Castling rights using bits
 // (WHITE_KINGSIDE)(WHITE_QUEENSIDE)(BLACK_KINGSIDE)(BLACK_QUEENSIDE)
 enum castling {
 	NO_CASTLING,
@@ -212,6 +216,8 @@ enum castling {
 	QUEENSIDE = WHITE_QUEENSIDE | BLACK_QUEENSIDE,
 	ANY_CASTLING = WHITE_BOTHSIDE | BLACK_BOTHSIDE
 };
+
+// Module board.c
 
 struct board {
 	enum piece_id squares[64]; // piece_id squares
@@ -232,10 +238,6 @@ void board_move_piece(struct board *board, int from, int to);
 void board_move(struct board *board, move move);
 void board_undo_move(struct board *board, move move, enum piece_id captured);
 
-///
-/// Move Generation
-///
-
 enum gentype {
 	QUIET,
 	CASTLE,
@@ -252,8 +254,11 @@ struct movegenc {
 	u64 target;		// targets bitboard
 };
 
+
+// Module movegen.c
+
 bool attacks_table_initilized();
 void init_lineattacks_table();
 move* generate_moves(struct board *board, move *moves, struct movegenc *conf);
 
-#endif // TYPES_H
+#endif // CHESS_H
