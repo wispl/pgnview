@@ -37,7 +37,8 @@ enum squares {
 	a5, b5, c5, d5, e5, f5, g5, h5,
 	a6, b6, c6, d6, e6, f6, g6, h6,
 	a7, b7, c7, d7, e7, f7, g7, h7,
-	a8, b8, c8, d8, e8, f8, g8, h8
+	a8, b8, c8, d8, e8, f8, g8, h8,
+	SQUARES_NONE
 };
 
 // Creates a bitboard from a square.
@@ -152,6 +153,19 @@ static inline int pop_lsb(u64 *bb)
 // 1 bit for capture flag
 // 1 bit for promotion flag
 // 2 bits for special flags (promo piece or castling)
+//
+// for special flags
+// if promotion flag is set:
+// 00 = knight
+// 01 = bishop
+// 10 = rook
+// 11 = queen
+//
+// if capture flag is set:
+// not 0 = en passant
+//
+// otherwise:
+// not 0 = castle
 typedef uint16_t move;
 
 #define make_move(from, to, capture, promo, special) \
@@ -161,6 +175,8 @@ typedef uint16_t move;
 #define make_castle(from, to)	(make_move((from), (to), false, false, true))
 #define make_promotion(from, to, is_capture, piece) \
 	(make_move((from), (to), (is_capture), true, (piece)))
+#define make_enpassant(from, to) \
+	(make_move((from), (to), true, false, true))
 
 #define move_from(move)		((move) & 0x3f)
 #define move_to(move)		(((move) >> 6) & 0x3f)
@@ -174,6 +190,7 @@ typedef uint16_t move;
 #define move_is_promotion(move)  (((move) >> 13) & 1)
 #define move_is_quiet(move)      (!move_is_promotion((move)) && !move_is_capture((move)))
 #define move_is_castle(move)     (move_is_quiet((move)) && move_promo_piece((move)))
+#define move_is_enpassant(move)  (move_is_capture((move)) && move_promo_piece((move)))
 
 enum color {
 	WHITE,
@@ -224,6 +241,7 @@ struct board {
 	u64 pieces[PIECE_MAX];     // piece bitboards
 	u64 colors[COLOR_MAX];     // color bitboards
 	enum castling castling;    // castling rights
+	int ep_square;
 };
 
 #define pieces(board, piece, color) ((board)->pieces[(piece)] & (board)->colors[(color)])

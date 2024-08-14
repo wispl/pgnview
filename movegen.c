@@ -115,7 +115,6 @@ static move* all_promotions(move *moves, int from, int to, bool is_capture)
 	return moves;
 }
 
-// TODO: handle en passant
 static move* generate_pawn_moves(struct board *board, move *moves, struct movegenc *conf)
 {
 	enum gentype movetype = conf->type;
@@ -181,6 +180,20 @@ static move* generate_pawn_moves(struct board *board, move *moves, struct movege
 		while (b2) {
 			int to = pop_lsb(&b2);
 			*moves++ = make_capture(to - up_left, to);
+		}
+
+		if (board->ep_square != SQUARES_NONE) {
+			b1 = shift(not_rank7_pawns, up_right) & square_bb(board->ep_square);
+			b2 = shift(not_rank7_pawns, up_left) & square_bb(board->ep_square);
+
+			while (b1) {
+				int to = pop_lsb(&b1);
+				*moves++ = make_enpassant(to - up_right, board->ep_square);
+			}
+			while (b2) {
+				int to = pop_lsb(&b2);
+				*moves++ = make_enpassant(to - up_left, board->ep_square);
+			}
 		}
 	}
 	return moves;

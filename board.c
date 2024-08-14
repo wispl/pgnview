@@ -9,6 +9,11 @@ static inline enum piece_id make_piece(enum piece piece, enum color color)
 	return piece + (color * B_PAWN);
 }
 
+static inline bool pawn_double_move(int from, int to)
+{
+	return (from < to ? to - from : from - to) == 16;
+}
+
 void board_init(struct board *board)
 {
 	board->colors[WHITE]  = rank_1 | rank_2;
@@ -36,6 +41,7 @@ void board_init(struct board *board)
 	};
 	memcpy(board->squares, squares, 64 * sizeof(enum piece));
 	board->castling = ANY_CASTLING;
+	board->ep_square = SQUARES_NONE;
 }
 
 void board_put_piece(struct board *board, int square, enum piece_id id)
@@ -79,6 +85,12 @@ void board_move(struct board *board, move move)
 	int from = move_from(move);
 	int to   = move_to(move);
 	enum color color = piece_color(board->squares[from]);
+	enum piece_id id = board->squares[from];
+
+	if (piece_type(id) == PAWN && pawn_double_move(from, to))
+		board->ep_square = (color == WHITE) ? to - 8 : to + 8;
+	else
+		board->ep_square = SQUARES_NONE;
 
 	// update castling rights
 	// king moved
@@ -100,7 +112,9 @@ void board_move(struct board *board, move move)
 		return;
 	}
 
-	if (move_is_capture(move))
+	if (move_is_enpassant(move))
+		board_del_piece(board, to + (color == WHITE ? -8 : 8));
+	else if (move_is_capture(move))
 		board_del_piece(board, to);
 
 	board_move_piece(board, from, to);
@@ -136,6 +150,8 @@ void board_undo_move(struct board *board, move move, enum piece_id captured)
 
 	board_move_piece(board, to, from);
 
-	if (move_is_capture(move))
+	if (move_is_enpassant(move))
+		board_put_piece(board, to + (color == WHITE ? -8 : 8), captured);
+	else if (move_is_capture(move))
 		board_put_piece(board, to, captured);
 }

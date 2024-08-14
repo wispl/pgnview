@@ -166,7 +166,12 @@ void do_move(bool undo)
 		curr = state.moves[state.moves_idx];
 
 		if (move_is_capture(curr)) {
-			state.captures[state.captures_idx] = state.board.squares[move_to(curr)];
+			int from = move_from(curr);
+			enum color color = piece_color(state.board.squares[from]);
+			int sq = move_to(curr);
+			if (move_is_enpassant(curr))
+				sq += (color == WHITE) ? -8 : 8;
+			state.captures[state.captures_idx] = state.board.squares[sq];
 			++state.captures_idx;
 		}
 		board_move(&state.board, curr);
