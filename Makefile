@@ -52,7 +52,7 @@ clean:
 
 .Phony: test $(TESTS)
 
-$(TEST_DIR)/%: $(TEST_DIR)/%.c
+$(TEST_DIR)/%: $(TEST_DIR)/%.c $(PGN_OBJS) $(CHESS_OBJS)
 	$(CC) $< $(CFLAGS) $(LDFLAGS) $(PGN_OBJS) $(CHESS_OBJS) -o $@
 
 $(TEST_DIR)/%.test.res: $(TEST_DIR)/%.test
