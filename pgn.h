@@ -25,7 +25,6 @@ struct pgn {
 	int tagcount;
 	struct pgn_move *moves;	// all moves (white and black) in parsed order
 	int movecount;
-	char result[8];		// result of the game
 };
 
 enum pgn_result pgn_read(struct pgn *pgn, char *filename);
