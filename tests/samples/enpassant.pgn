@@ -1,0 +1,17 @@
+[Event "Casual Classical game"]
+[Site "https://lichess.org/nvtiBwGP"]
+[Date "2023.07.20"]
+[White "Anonymous"]
+[Black "Anonymous"]
+[Result "1-0"]
+[UTCDate "2023.07.20"]
+[UTCTime "15:38:18"]
+[WhiteElo "?"]
+[BlackElo "?"]
+[Variant "Standard"]
+[TimeControl "10800+180"]
+[ECO "C41"]
+[Opening "Philidor Defense: Exchange Variation"]
+[Termination "Normal"]
+
+1. e4 c5 2. h3 c4 3. d4 cxd3 1-0

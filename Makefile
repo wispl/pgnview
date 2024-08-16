@@ -16,7 +16,12 @@ EXE = pgnview
 RELEASE_DIR = release
 RELEASE_EXE = $(RELEASE_DIR)/$(EXE)
 
-TESTS := $(wildcard tests/test_*.c)
+TEST_DIR  = tests
+TEST_SRCS = $(wildcard $(TEST_DIR)/*.c)
+TEST_EXES = $(patsubst %.c,%,$(TEST_SRCS))
+TESTS     = $(wildcard $(TEST_DIR)/*.test)
+
+TEST_RESULTS = $(addsuffix .res, $(TESTS))
 
 .Phony: all
 all: pgnview
@@ -46,10 +51,11 @@ clean:
 	rm -rf $(RELEASE_DIR) $(EXE) test_* $(OBJS)
 
 .Phony: test $(TESTS)
-test: $(TESTS)
 
-# TODO: use something else besides running and scanning for assertions
-# TODO: cache results? keep executable around?
-$(TESTS): tests/test_%.c: $(PGN_OBJS) $(CHESS_OBJS)
-	@$(CC) $@ -o $(basename $(notdir $@)) $(PGN_OBJS) $(CHESS_OBJS) $(LDFLAGS)
-	./$(basename $(notdir $@))
+$(TEST_DIR)/%: $(TEST_DIR)/%.c
+	$(CC) $< $(CFLAGS) $(LDFLAGS) $(PGN_OBJS) $(CHESS_OBJS) -o $@
+
+$(TEST_DIR)/%.test.res: $(TEST_DIR)/%.test
+	./$<
+
+test: $(TEST_EXES) $(TEST_RESULTS)

@@ -1,0 +1,11 @@
+# tests move parsing of valid pgn
+
+./tests/print_moves <(echo '[Event "Casual Classical game"]
+[Site "https://lichess.org/nvtiBwGP"]
+[Date "2023.07.20"]
+[White "Anonymous"]
+[Black "Anonymous"]
+[Result "1-0"]
+
+1. e4 c5 2. h3 c4 3. d4 cxd3 1-0') |
+diff -Zq <(echo 'e4 c5 h3 c4 d4 cxd3') -
