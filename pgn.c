@@ -324,8 +324,13 @@ static void movetext(struct parser *parser)
 		} while (check(parser, TK_PERIOD));
 	}
 
-	memcpy(&move.text, &parser->token.value, parser->token.len);
-	expect(parser, TK_SYMBOL);
+	if (check(parser, TK_SYMBOL)) {
+		memcpy(&move.text, &parser->token.value, parser->token.len);
+		expect(parser, TK_SYMBOL);
+	} else if (check(parser, TK_ASTERISK)) {
+		memcpy(&move.text, &parser->token.value, parser->token.len);
+		expect(parser, TK_ASTERISK);
+	}
 
 	if (parser->unhandled_error) {
 		fprintf(stderr, parser_err, parser->py, parser->px, "move");
@@ -362,15 +367,26 @@ enum pgn_result pgn_read(struct pgn* pgn, char* filename)
 		case TK_LBRACKET: tag(&parser);      break;
 		case TK_INTEGER:  movetext(&parser); break;
 		case TK_SYMBOL:	  movetext(&parser); break;
+		case TK_ASTERISK: movetext(&parser); break;
 		default: 	  next_token(&parser);
 		}
 	}
 
 	// finalization
-	// Delete last move as it provides the result of the game
-	memcpy(pgn->result, vec_pop(pgn->moves).text, sizeof(char) * 8);
 	pgn->tagcount = vec_len(pgn->tags);
 	pgn->movecount = vec_len(pgn->moves);
+
+	char* last = pgn->moves[pgn->movecount - 1].text;
+	if (strcmp(last, "*") == 0
+		|| strcmp(last, "1-0") == 0
+		|| strcmp(last, "0-1") == 0
+		|| strcmp(last, "1/2-1/2") == 0
+	) {
+		vec_pop(pgn->moves);
+		--pgn->movecount;
+	} else {
+		fprintf(stderr, "Warning: Movetext termination marker not found!\n");
+	}
 
 	// cleanup
 	fclose(parser.file);

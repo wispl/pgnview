@@ -1,6 +1,6 @@
 # tests tag parsing of valid pgn, single lines and no spaces between
 
-./tests/print_tags <(echo '[Event "Casual Classical game"][Site "https://lichess.org/nvtiBwGP"] [Date "2023.07.20"] [White "Anonymous"][Black "Anonymous"][Result "1-0"] 1. e4') |
+./tests/print_tags <(echo '[Event "Casual Classical game"][Site "https://lichess.org/nvtiBwGP"] [Date "2023.07.20"] [White "Anonymous"][Black "Anonymous"][Result "1-0"] 1. e4 *') |
 diff -q <(echo 'Casual Classical game
 https://lichess.org/nvtiBwGP
 2023.07.20
