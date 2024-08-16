@@ -317,19 +317,19 @@ static void movetext(struct parser *parser)
 	struct pgn_move move;
 
 	if (check(parser, TK_INTEGER)) {
-		expect(parser, TK_INTEGER);
+		next_token(parser);
 		// unlimited periods is permitted by the standard: "1..."
 		do {
-			expect(parser, TK_PERIOD);
+			next_token(parser);
 		} while (check(parser, TK_PERIOD));
 	}
 
 	if (check(parser, TK_SYMBOL)) {
 		memcpy(&move.text, &parser->token.value, parser->token.len);
-		expect(parser, TK_SYMBOL);
+		next_token(parser);
 	} else if (check(parser, TK_ASTERISK)) {
 		memcpy(&move.text, &parser->token.value, parser->token.len);
-		expect(parser, TK_ASTERISK);
+		next_token(parser);
 	}
 
 	if (parser->unhandled_error) {
