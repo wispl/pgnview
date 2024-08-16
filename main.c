@@ -186,7 +186,7 @@ int main(int argc, char **argv)
 {
 	if (argc < 2) {
 		fprintf(stderr, "Please specify a file!\n");
-		return 0;
+		return 1;
 	}
 	board_init(&state.board);
 
@@ -195,16 +195,22 @@ int main(int argc, char **argv)
 	if (pgn_res != PGN_OK) {
 		if (pgn_res == PGN_FILE_ERROR) {
 			fprintf(stderr, "Could not open %s for reading!\n", argv[1]);
-			return 0;
+			return 1;
 		} else if (pgn_res == PGN_MOVE_PARSE_ERROR){
 			fprintf(stderr, "Errors while parsing moves, exiting!");
-			return 0;
+			return 1;
 		}
 	}
 
-	// TODO: handle length mismatch
 	state.moves   = malloc_array(state.pgn.movecount, sizeof(move));
 	int moves_len = pgn_to_moves(&state.pgn, state.moves);
+
+	if (moves_len != state.pgn.movecount) {
+		fprintf(stderr,
+			"Unable parse all moves, %d out of %d, maybe some moves are illegal?\n", 
+			moves_len, state.pgn.movecount);
+		return 1;
+	}
 
 	tb_init();
 	tb_hide_cursor();
