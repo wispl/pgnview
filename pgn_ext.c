@@ -182,6 +182,10 @@ int pgn_to_moves(const struct pgn *pgn, move *moves)
 			++n;
 			moves[i] = move;
 			board_move(&board, move);
+		} else {
+			// no point in continuing, the rest of the moves will
+			// just be nonsense
+			return n;
 		}
 	}
 	return n;
