@@ -161,7 +161,7 @@ static inline int pop_lsb(u64 *bb)
 // 10 = rook
 // 11 = queen
 //
-// if capture flag is set:
+// if capture flag is set but not promotion flag:
 // not 0 = en passant
 //
 // otherwise:
@@ -190,7 +190,8 @@ typedef uint16_t move;
 #define move_is_promotion(move)  (((move) >> 13) & 1)
 #define move_is_quiet(move)      (!move_is_promotion((move)) && !move_is_capture((move)))
 #define move_is_castle(move)     (move_is_quiet((move)) && move_promo_piece((move)))
-#define move_is_enpassant(move)  (move_is_capture((move)) && move_promo_piece((move)))
+#define move_is_enpassant(move)  \
+	(move_is_capture((move)) && !move_is_promotion((move)) && move_promo_piece((move)))
 
 enum color {
 	WHITE,
