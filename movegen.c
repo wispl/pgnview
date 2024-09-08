@@ -236,14 +236,15 @@ move* generate_moves(struct board *board, move *moves, struct movegenc *conf)
 
 	u64 pieces   =  pieces(board, conf->piece, conf->color);
 	u64 occupied =  board->pieces[ALL];
-	u64 empty    = ~occupied;
-	u64 enemies  =  board->colors[flip_color(conf->color)];
+
 	bool is_capture = (conf->type == CAPTURE);
+	u64 empty       = ~occupied;
+	u64 enemies     =  board->colors[flip_color(conf->color)];
+	u64 target      =  ((is_capture) ? enemies : empty) & conf->target;
 
 	while (pieces) {
 		int from = pop_lsb(&pieces);
-		u64 bb   = attacks_bb(from, occupied, conf->piece);
-		bb &= ((is_capture) ? enemies : empty) & conf->target;
+		u64 bb   = attacks_bb(from, occupied, conf->piece) & target;
 
 		while (bb)
 			*moves++ = make_move(from, pop_lsb(&bb), is_capture, false, 0);
