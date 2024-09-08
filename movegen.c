@@ -2,7 +2,10 @@
 
 #include <assert.h>
 #include <string.h>
+#include <stdint.h>
 #include <stdbool.h>
+
+#define ALL_SQUARES_BB (UINT64_MAX)
 
 enum lineattacks {
 	DIAGONAL,	
@@ -245,5 +248,45 @@ move* generate_moves(struct board *board, move *moves, struct movegenc *conf)
 		while (bb)
 			*moves++ = make_move(from, pop_lsb(&bb), is_capture, false, 0);
 	}
+	return moves;
+}
+
+static move*
+generate_quiet_and_captures(struct board *board, move *moves, struct movegenc *conf)
+{
+	conf->type = CAPTURE;
+	moves = generate_moves(board, moves, conf);
+	conf->type = QUIET;
+	moves = generate_moves(board, moves, conf);
+
+	return moves;
+}
+
+move* generate_legal_moves(struct board *board, move *moves, enum color color)
+{
+	struct movegenc conf = {
+		.color = color,
+		.target = ALL_SQUARES_BB,
+	};
+
+	conf.piece = PAWN;
+	conf.type = QUIET;
+	moves = generate_pawn_moves(board, moves, &conf);
+	conf.type = CAPTURE;
+	moves = generate_pawn_moves(board, moves, &conf);
+	conf.type = PROMOTION;
+	moves = generate_pawn_moves(board, moves, &conf);
+	conf.type = PROMO_CAPTURE;
+	moves = generate_pawn_moves(board, moves, &conf);
+
+	conf.piece = KNIGHT;
+	moves = generate_quiet_and_captures(board, moves, &conf);
+	conf.piece = BISHOP;
+	moves = generate_quiet_and_captures(board, moves, &conf);
+	conf.piece = ROOK;
+	moves = generate_quiet_and_captures(board, moves, &conf);
+	conf.piece = QUEEN;
+	moves = generate_quiet_and_captures(board, moves, &conf);
+
 	return moves;
 }

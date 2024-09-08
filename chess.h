@@ -279,5 +279,6 @@ struct movegenc {
 bool attacks_table_initilized();
 void init_lineattacks_table();
 move* generate_moves(struct board *board, move *moves, struct movegenc *conf);
+move* generate_legal_moves(struct board *board, move *moves, enum color color);
 
 #endif // CHESS_H
