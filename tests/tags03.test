@@ -1,0 +1,15 @@
+# tests tag parsing of valid pgn, with spacers in between and no delimiters
+
+./tests/print_tags <(echo '[Event "Casual Classical game"]
+[Site"https://lichess.org/nvtiBwGP"]
+[      Date          "2023.07.20"     ]
+[White"Anonymous"]
+[        Black "Anonymous"]
+[Result "1-0"           ]
+1. e4 *') |
+diff -q <(echo 'Casual Classical game
+https://lichess.org/nvtiBwGP
+2023.07.20
+Anonymous
+Anonymous
+1-0') -
