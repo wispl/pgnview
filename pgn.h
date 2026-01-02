@@ -1,30 +1,84 @@
 #ifndef PARSER_H
 #define PARSER_H
 
+/// pgn standard: https://ia802908.us.archive.org/26/items/pgn-standard-1994-03-12/PGN_standard_1994-03-12.txt
+
+/// This file handles parsing of pgn files, returning a parsed
+/// structure containing moves, tags, and nags. Examine the link
+/// above for more details on a pgn file format. A brief description
+/// is included in some of the structures.
+
+/// The result of a pgn read
 enum pgn_result {
-	PGN_OK,
-	PGN_FILE_ERROR,
-	PGN_LEX_ERROR,
-	PGN_TAG_PARSE_ERROR,
-	PGN_MOVE_PARSE_ERROR,
+	PGN_OK,               // All good :)
+	PGN_FILE_ERROR,       // Unable to open or read file
+	PGN_LEX_ERROR,        // Unable to parse file, unknown syntax error 
+	PGN_TAG_PARSE_ERROR,  // Could not parse tag, syntax error
+	PGN_MOVE_PARSE_ERROR, // Could not parse move, syntax error
 };
 
+/// A pgn tag gives metadata about the game, here are a couple
+/// of example tags for a game
+///
+///   [Event "IBM Man-Machine, New York USA"]
+///   [Site "01"]
+///   [Date "1997.??.??"]
+///   [EventDate "?"]
+///   [Round "?"]
+///   [Result "1-0"]
+///   [White "Garry Kasparov"]
+///   [Black "Deep Blue (Computer)"]
+///   [ECO "A06"]
+///   [WhiteElo "?"]
+///   [BlackElo "?"]
+///   [PlyCount "89"]
+///
+/// The first word denotes the key and the second, wrapped in
+/// quotes, denotes the data. You can define whatever tag  
+/// you want, but you have to follow STR (Seven Tag Roster)
+/// which means the following tags must be included
+///   1) Event (the name of the tournament or match event)
+///   2) Site (the location of the event)
+///   3) Date (the starting date of the game)
+///   4) Round (the playing round ordinal of the game)
+///   5) White (the player of the white pieces)
+///   6) Black (the player of the black pieces)
+///   7) Result (the result of the game)
+/// The order of the tags does not matter, except when
+/// when exporting a game, in which case follow the order listed
 struct pgn_tag {
 	char *name, *desc;
 };
 
-struct pgn_move {
+/// A ply is half of a move, in other words, a move consists of
+/// two plies, one from white, and one from black. Each ply
+/// can be annotated with a comment or NAG if desired. A NAG
+/// is a numerical code with a defined meaning (see link above).
+/// The ply text is the ply encoded in SAN, standard algebraic 
+/// notation. See the below for an example of a ply
+///
+///  Bb5 {Ruy Lopez Opening} $1
+///
+/// This ply has text Bb5, with the comment Ruy Lopez opening
+/// and a NAG of 1 which corresponds to a "good move".
+struct pgn_ply {
 	char text[8];	// move encoding in SAN
 	int  nag;	// 0-255 NAG value (optional)
 	char *comment;  // comment (optional)
 };
 
-// TODO: technically the moves are plies, rename?
-struct pgn {
-	struct pgn_tag  *tags;	// all tags in parsed order
+/// This holds all tags and plies of a game
+struct pgn_game {
 	int tagcount;
-	struct pgn_move *moves;	// all moves (white and black) in parsed order
-	int movecount;
+	struct pgn_tag *tags;	// all tags in parsed order
+	int plycount;
+	struct pgn_ply *plies;	// all plies in parsed order
+};
+
+/// A pgn can hold multiple games
+struct pgn {
+	pgn_game *games;
+	int gamecount;
 };
 
 enum pgn_result pgn_read(struct pgn *pgn, char *filename);
