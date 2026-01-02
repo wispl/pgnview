@@ -1,6 +1,51 @@
 #ifndef PARSER_H
 #define PARSER_H
 
+// stretchy buffer from skeeto's growable-buf
+#define VEC_INIT_SIZE 8
+struct vec {
+	int size;
+	int len;
+	char buffer[];
+};
+
+#define containerof(ptr) ((struct vec *)((char *)(ptr) - offsetof(struct vec, buffer)))
+#define vec_free(vec)                             \
+	do {                                      \
+		if ((vec)) {                      \
+			free(containerof((vec))); \
+				(vec) = 0;        \
+		}                                 \
+	} while (0)
+#define vec_size(vec)    ((vec) ? containerof((vec))->size : 0)
+#define vec_len(vec)     ((vec) ? containerof((vec))->len : 0)
+#define vec_pop(vec) ((vec)[--containerof((vec))->len])
+#define vec_push(vec, e)                                         \
+	do {                                                     \
+		if (vec_len((vec)) == vec_size((vec)))           \
+			(vec) = vec_grow((vec), sizeof(*(vec))); \
+		(vec)[containerof((vec))->len++] = (e);          \
+	} while (0)
+
+static void* vec_grow(void *v, int element_size)
+{
+	struct vec *vec;
+	if (v) {
+		vec = containerof(v);
+		vec->size += (vec->size == 0) ? VEC_INIT_SIZE : vec->size;
+		vec = realloc(vec, sizeof(struct vec) + element_size * vec->size);
+		if (!vec)
+			abort();
+	} else {
+		vec = malloc(sizeof(struct vec) + element_size * VEC_INIT_SIZE);
+		if (!vec)
+			abort();
+		vec->size = VEC_INIT_SIZE;
+		vec->len = 0;
+	}
+	return vec->buffer;
+}
+
 /// pgn standard: https://ia802908.us.archive.org/26/items/pgn-standard-1994-03-12/PGN_standard_1994-03-12.txt
 
 /// This file handles parsing of pgn files, returning a parsed
