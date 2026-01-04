@@ -2,26 +2,25 @@
 
 #include <ctype.h>
 #include <stdbool.h>
-#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-// pgn standard:
-// https://ia802908.us.archive.org/26/items/pgn-standard-1994-03-12/PGN_standard_1994-03-12.txt
-
 enum token_type {
 	TK_LBRACKET,	// [
 	TK_RBRACKET, 	// ]
+	TK_LBRACE,	// {
+	TK_RBRACE, 	// }
 	TK_LPAREN,	// (
 	TK_RPAREN,	// )
 	TK_LANGLE,	// <
 	TK_RANGLE,	// >
 	TK_PERIOD,	// .
-	TK_ASTERISK,	// *
-	TK_STRING,	// quote delimeted characters
+	TK_SEMICOLON,	// ; along with any text until \n or \r
+	TK_TERMINATION,	// *, 1-0, 0-1, 1/2-1/2 
+	TK_STRING,	// quote delimited characters
 	TK_SYMBOL,	// letter or digits followed by any of [A-Za-z0-9_+#=:-]
-	TK_INTEGER,	// sequence of decimal digits, special case of SYMBOL
+	TK_INTEGER,	// sequence of decimal digits
 	TK_NAG,		// $ followed by digits
 	TK_UNKNOWN,     // unparsable tokens
 	TK_EOF,         // end of file
@@ -29,20 +28,23 @@ enum token_type {
 };
 
 static const char* token_str[TK_MAX] = {
-	[TK_LBRACKET] = "[",
-	[TK_RBRACKET] = "]",
-	[TK_LPAREN]   = "(",
-	[TK_RPAREN]   = ")",
-	[TK_LANGLE]   = "<",
-	[TK_RANGLE]   = ">",
-	[TK_PERIOD]   =	".",
-	[TK_ASTERISK] = "*",
-	[TK_STRING]   = "string",
-	[TK_SYMBOL]   = "symbol",
-	[TK_INTEGER]  = "integer",
-	[TK_NAG]      = "nag",
-	[TK_UNKNOWN]  = "unknown",
-	[TK_EOF]      = "eof"
+	[TK_LBRACKET]     = "[",
+	[TK_RBRACKET]     = "]",
+	[TK_LBRACE]       = "{",
+	[TK_RBRACE]       = "}",
+	[TK_LPAREN]       = "(",
+	[TK_RPAREN]       = ")",
+	[TK_LANGLE]       = "<",
+	[TK_RANGLE]       = ">",
+	[TK_PERIOD]       = ".",
+	[TK_SEMICOLON]    = ";",
+	[TK_TERMINATION]  = "termination",
+	[TK_STRING]       = "string",
+	[TK_SYMBOL]       = "symbol",
+	[TK_INTEGER]      = "integer",
+	[TK_NAG]          = "nag",
+	[TK_UNKNOWN]      = "unknown",
+	[TK_EOF]          = "eof"
 };
 
 static const char *syntax_err =
@@ -50,38 +52,30 @@ static const char *syntax_err =
 	"but found token '%s' with value '%s'\n";
 
 static const char *parser_err =
-	"Error(Parser) |%d, col %d|: error occured trying to parse '%s'\n";
+	"Error(Parser) |%d, col %d|: error occurred trying to parse '%s'\n";
 
+/// Note the value stored in the token does not include the null terminator
 struct token {
 	enum token_type type; // type of the token
 	char value[256];      // symbols and strings have max length of 255
-	int len;              // length of value, including the null terminator
+	int len;              // length of value
 };
 
-// internal structure for sharing data between parsing functions
+/// Internal structure for sharing data between parsing functions
+/// Since the implementation of the reader is an interleaved  
+/// lexer + parser, we need this sharing of data 
 struct parser {
-	enum pgn_result result;
+	struct pgn *pgn;         // current pgn game being parsed
+	enum pgn_result result;  // result of pgn read operation
+
 	// lexer
-	FILE *file;
-	struct token token;
-	char last_char;
-	int y, x;	// location of lexer cursor (syntax errors)
+	FILE *file;              // pgn file being read from
+	int y, x;                // location of lexer cursor (syntax errors)
 
 	// parser
-	bool unhandled_error;
-	int py, px;	// location of parser cursor (parser errors)
-
-	// data
-	struct pgn *pgn;
-};
-
-// stretchy buffer from skeeto's growable-buf
-#define VEC_INIT_SIZE 8
-
-struct vec {
-	int size;
-	int len;
-	char buffer[];
+	bool unhandled_error;    // whether there is an unhandled error
+	struct token token;      // current token being parsed
+	struct token prev_token; // previous token
 };
 
 //
@@ -94,133 +88,140 @@ static inline bool is_symbol(char c)
 			  || c == '=' || c == ':' || c == '-';
 }
 
-// TODO: small buffer of parsed characters for error messages
+static inline char advance(struct parser *parser)
+{
+	++parser->x;
+	return getc(parser->file);
+}
+
+static inline char peek(struct parser *parser)
+{
+	char c = getc(parser->file);
+	ungetc(c, parser->file);
+	return c;
+}
+
+static inline void add_to_token(struct parser *parser, char c)
+{
+	parser->token.value[parser->token.len] = c;
+	++parser->token.len;
+}
+
+static void terminal(struct parser *parser, char c, enum token_type type)
+{
+	parser->token.value[0] = c;
+	parser->token.type = type;
+	parser->token.len = 1;
+}
+
+/// String tokens, these start with a " and end with a " 
+static void string(struct parser *parser)
+{
+	parser->token.type = TK_STRING;
+	// TODO: handle escaped strings, \"
+	char c;
+	while ((c = advance(parser)) != '"')
+		add_to_token(parser, c);
+}
+
+static void symbol(struct parser *parser)
+{
+	bool symbol = false;
+	while (is_symbol(peek(parser))) {
+		char c = advance(parser);
+		add_to_token(parser, c);
+		symbol |= (isdigit(c) == false);
+	}
+
+	parser->token.type = symbol ? TK_SYMBOL : TK_INTEGER;
+	if (symbol &&
+	    (strncmp(parser->token.value, "1/2-1/2", 7) == 0 ||
+	     strncmp(parser->token.value, "1-0", 3) == 0 ||
+	     strncmp(parser->token.value, "0-1", 3) == 0)) {
+		parser->token.type = TK_TERMINATION;
+	}
+}
+
+/// Nag tokens, these are digits following a $
+static void nag(struct parser *parser)
+{
+	parser->token.type = TK_NAG;
+	while (isdigit(peek(parser)))
+		add_to_token(parser, advance(parser));
+}
+
+/// Not exactly a token defined by the standard, but I think this is a useful
+/// distinction to have when lexing and parsing
+static void comment(struct parser *parser)
+{
+	parser->token.type = TK_SEMICOLON;
+	while (peek(parser) != '\n')
+		add_to_token(parser, advance(parser));
+}
+
+// This just allows me to use fake ranges for the switch statement
+static char transform_char(char c) {
+	if (isalnum(c))
+		return 'a';
+	else
+		return c;
+}
+
 static void next_token(struct parser *parser)
 {
-	parser->x += parser->token.len - 1;
+	parser->prev_token = parser->token;
+	// Clear out the current token value, no need to clear out .value itself
+	// since we will use memcpy to pull the value out of the token, that is,
+	// the token is an implementation detail which is not exposed publicly
+	parser->token.len = 0;
 
-	// EOF token
-	if (parser->last_char == EOF) {
-		parser->token.type = TK_EOF;
-		return;
-	}
-
-	// ignore whitespace
-	while (isspace(parser->last_char)) {
-		++parser->x;
-		if (parser->last_char == '\n') {
-			parser->x = 1;
-			++parser->y;
+	while (true) {
+		char c = advance(parser);
+		switch (transform_char(c)) {
+		// Terminal tokens
+		case '[': return terminal(parser, c, TK_LBRACKET);
+		case ']': return terminal(parser, c, TK_RBRACKET);
+		case '(': return terminal(parser, c, TK_LPAREN);
+		case ')': return terminal(parser, c, TK_RPAREN);
+		case '{': return terminal(parser, c, TK_LBRACE);
+		case '}': return terminal(parser, c, TK_RBRACE);
+		case '<': return terminal(parser, c, TK_LANGLE);
+		case '>': return terminal(parser, c, TK_RANGLE);
+		case '.': return terminal(parser, c, TK_PERIOD);
+		case '*': return terminal(parser, c, TK_TERMINATION);
+		case EOF: return terminal(parser, c, TK_EOF);
+		// Complex tokens
+		case '"': return string(parser);
+		case '$': return nag(parser);
+		case ';': return comment(parser);
+		case 'a': return symbol(parser);
+		// Ignore whitespace
+		case '\t':
+		case '\r':
+		case ' ': break;
+		case '\n': ++parser->y; parser->x = 0; break;
+		default: return terminal(parser, c, TK_UNKNOWN);
 		}
-		parser->last_char = getc(parser->file);
 	}
-
-	// ignore comments
-	if (parser->last_char == ';') {
-		do {
-			parser->last_char = getc(parser->file);
-		} while (parser->last_char != EOF &&
-			 parser->last_char != '\n' &&
-			 parser->last_char != '\r');
-		++parser->y;
-	}
-
-	// terminal tokens
-	switch (parser->last_char) {
-	case '[':  parser->token.type = TK_LBRACKET; break;
-	case ']':  parser->token.type = TK_RBRACKET; break;
-	case '(':  parser->token.type = TK_LPAREN;   break;
-	case ')':  parser->token.type = TK_RPAREN;   break;
-	case '<':  parser->token.type = TK_LANGLE;   break;
-	case '>':  parser->token.type = TK_RANGLE;   break;
-	case '.':  parser->token.type = TK_PERIOD;   break;
-	case '*':  parser->token.type = TK_ASTERISK; break;
-	default:   parser->token.type = TK_UNKNOWN;
-	}
-	if (parser->token.type != TK_UNKNOWN) {
-		parser->token.value[0] = parser->last_char;
-		parser->token.value[1] = '\0';
-		parser->token.len = 2;
-		parser->last_char = getc(parser->file);
-		return;
-	}
-
-	// nag tokens
-	if (parser->last_char == '$') {
-		int len = 0;
-		do {
-			parser->token.value[len] = parser->last_char;
-			parser->last_char = getc(parser->file);
-			++len;
-		} while (isdigit(parser->last_char));
-
-		parser->token.type = TK_NAG;
-		parser->token.value[len] = '\0';
-		parser->token.len = len + 1;
-		return;
-	}
-
-	// string token
-	if (parser->last_char == '"') {
-		++parser->x;
-		parser->token.type = TK_STRING;
-		int len = 0;
-		while ((parser->last_char = getc(parser->file)) != '"') {
-			parser->token.value[len] = parser->last_char;
-			++len;
-		}
-		parser->token.value[len] = '\0';
-		parser->token.len = len + 1;
-
-		// skip closing quotes
-		parser->last_char = getc(parser->file);
-		return;
-	}
-
-	// symbol token and integer token (special case of symbol token)
-	if (isalnum(parser->last_char)) {
-		bool all_ints = true;
-		int len = 0;
-		do {
-			all_ints &= (isdigit(parser->last_char) != 0);
-			parser->token.value[len] = parser->last_char;
-			parser->last_char = getc(parser->file);
-			++len;
-		} while (is_symbol(parser->last_char));
-
-		parser->token.type = all_ints ? TK_INTEGER : TK_SYMBOL;
-		parser->token.value[len] = '\0';
-		parser->token.len = len + 1;
-		return;
-	}
-
-	// unknown tokens
-	parser->token.type = TK_UNKNOWN;
-	parser->token.value[0] = parser->last_char;
-	parser->token.value[1] = '\0';
-	parser->token.len = 2;
-
-	parser->last_char = getc(parser->file);
 }
 
 //
 // Parser
 //
 
-static inline bool check(struct parser *parser, enum token_type type)
+static inline bool accept(struct parser *parser, enum token_type type)
 {
 	return parser->token.type == type;
 }
 
 static bool expect(struct parser *parser, enum token_type type)
 {
-	if (check(parser, type)) {
+	if (accept(parser, type)) {
 		next_token(parser);
 		return true;
 	}
 
 	parser->unhandled_error = true;
-
 	fprintf(stderr, syntax_err,
 		parser->y,
 		parser->x,
@@ -230,7 +231,7 @@ static bool expect(struct parser *parser, enum token_type type)
 	return false;
 }
 
-// copies the value of token to a buffer, the buffer must be freed
+/// Copies the value of token to a buffer, the buffer must be freed
 static inline void copy_token_value(char **buffer, struct token *token)
 {
 	void *tmp = malloc(token->len);
@@ -238,113 +239,158 @@ static inline void copy_token_value(char **buffer, struct token *token)
 		abort();
 	*buffer = tmp;
 	memcpy(*buffer, token->value, token->len);
+	*buffer[token->len + 1] = '\0';
 }
 
-// tag is made of the following tokens: "[SYMBOL STRING]"
+/// Tag is made of the following tokens: "BRACKET SYMBOL STRING BRACKET"
 static void tag(struct parser *parser)
 {
-	struct pgn_tag tag;
+	struct pgn_tag tag = {0};
 
 	expect(parser, TK_LBRACKET);
-
-	copy_token_value(&tag.name, &parser->token);
-	expect(parser, TK_SYMBOL);
-
-	copy_token_value(&tag.desc, &parser->token);
-	expect(parser, TK_STRING);
-
+	if (expect(parser, TK_SYMBOL)) { 
+		copy_token_value(&tag.name, &parser->prev_token);
+	}
+	if (expect(parser, TK_STRING)) {
+		copy_token_value(&tag.desc, &parser->prev_token);
+	}
 	expect(parser, TK_RBRACKET);
 
+	// TODO: decide on an error handling strategy
 	if (parser->unhandled_error) {
-		fprintf(stderr, parser_err, parser->py, parser->px, "tag");
 		free(tag.name);
 		free(tag.desc);
+		fprintf(stderr, parser_err, parser->y, parser->x, "tag");
 		parser->unhandled_error = false;
 		parser->result = PGN_TAG_PARSE_ERROR;
 	} else {
-		vec_push(parser->pgn->tags, tag);
+		vec_push(vec_last(parser->pgn->games).tags, tag);
 	}
 }
 
-// TODO: handle comments and NAG tokens
-// Move is made of the following tokens: "(INTEGER PERIOD+)? SYMBOL"
-// The "(Integer PERIOD+)?" portion is known as the move indicator
-// and is optional for imports.
-static void movetext(struct parser *parser)
+/// A move indicator shows the order the move is in,
+///
+///  1. d4
+///  1  c4
+///     c4
+///  1........... Nf3
+///
+/// Are all valid. The move indicator is optional for imports. Also unlimited
+/// periods and no periods is permitted by the standard. Consider,
+///
+///  1 ... d6
+///
+/// the ... actually denotes a move by white so that has to be handled
+/// specifically Therefore the ... in "1............ d6" does not count but
+/// "1... d6" does but the following "1......... ... d6" is fine.
+/// TODO: handle ellipses
+static void move_indicator(struct parser *parser)
 {
-	struct pgn_move move;
+	expect(parser, TK_INTEGER);
+	while (accept(parser, TK_PERIOD))
+		expect(parser, TK_PERIOD);
+}
 
-	if (check(parser, TK_INTEGER)) {
-		next_token(parser);
-		// unlimited periods is permitted by the standard: "1..."
-		do {
-			next_token(parser);
-		} while (check(parser, TK_PERIOD));
-	}
+/// TODO: handle comments, NAG tokens, and RAV
+/// A ply is of a symbol, optionally along with a comment, NAG and RAV
+/// (Recursive Annotation Variations), all of which can appear at once
+/// and in any order.
+static void ply(struct parser *parser)
+{
+	struct pgn_ply ply = {0};
 
-	if (check(parser, TK_SYMBOL)) {
-		memcpy(&move.text, &parser->token.value, parser->token.len);
-		next_token(parser);
-	} else if (check(parser, TK_ASTERISK)) {
-		memcpy(&move.text, &parser->token.value, parser->token.len);
-		next_token(parser);
-	}
+	if (expect(parser, TK_SYMBOL))
+		memcpy(&ply.text, &parser->token.value, parser->token.len);
 
 	if (parser->unhandled_error) {
-		fprintf(stderr, parser_err, parser->py, parser->px, "move");
+		fprintf(stderr, parser_err, parser->y, parser->x, "ply");
 		parser->unhandled_error = false;
 		parser->result = PGN_MOVE_PARSE_ERROR;
+		free(ply.comment);
 	} else {
-		vec_push(parser->pgn->moves, move);
+		vec_push(vec_last(parser->pgn->games).plies, ply);
 	}
+}
+
+/// A movetext consists of a series of plies, the plies themselves may
+/// optionally be prepended with a move order. The move from black
+/// can be considered optional, consider the following
+///
+///  |snip| 21. Ng3 Ka1 22. a4 *
+///
+/// Here the game ended before black could make a move. I am not sure if
+///
+///  |snip| 1. f4 f5 2. Nf3 Nc6 3. *
+///
+/// is valid, but it is probably safe to assume this is invalid, therefore
+/// the move from white is required 
+/// 
+/// The standard seems to indicate superfluous move indicators are allowed as
+/// long as they are correct. For now, we are going to be lax and not check for
+/// correctness of the indicators, though that is something to consider
+static void movetext(struct parser *parser)
+{
+	while (accept(parser, TK_SYMBOL) || accept(parser, TK_INTEGER)) {
+		if (accept(parser, TK_INTEGER))
+			move_indicator(parser);
+
+		ply(parser);
+
+		if (accept(parser, TK_SYMBOL)) 
+			ply(parser);
+	}
+}
+
+/// A pgn game is a series of tags followed by a movetext and finally a
+/// termination marker. The termination markers are 
+///  "1-0" (White wins),
+///  "0-1" (Black wins),
+///  "1/2-1/2" (drawn game),
+///  "*" (game in progress, result unknown, or game abandoned).
+/// For easier parsing, the lexer has a token TK_TERMINATION
+/// to account for "*" along with the rest which are symbols
+/// But will be considered a termination token.
+static void pgn_game_block(struct parser *parser)
+{
+	struct pgn_game game = {0};
+	vec_init(game.tags);
+	vec_init(game.plies);
+	vec_push(parser->pgn->games, game);
+
+	while (accept(parser, TK_LBRACKET))
+		tag(parser);
+	movetext(parser);
+	expect(parser, TK_TERMINATION);
 }
 
 enum pgn_result pgn_read(struct pgn* pgn, char* filename)
 {
-	// initialization
-	pgn->tags = 0;
-	pgn->moves = 0;
+	// Initialize pgn 
+	vec_init(pgn->games);
+	pgn->filename = filename;
+	pgn->number_errors = 0;
+
+	// Initialize parser
 	struct parser parser = {
+		.pgn = pgn,
 		.result = PGN_OK,
+
 		.file  = fopen(filename, "r"),
-		.last_char = ' ',
 		.y = 1,
 		.x = 1,
-		.pgn = pgn
+
+		.unhandled_error = false,
+		.token = {0},
+		.prev_token = {0},
 	};
 
 	if (parser.file == NULL)
 		return PGN_FILE_ERROR;
 
-	// parsing
+	// Start Parsing
 	next_token(&parser);
-	while (parser.token.type != TK_EOF) {
-		parser.px = parser.x;
-		parser.py = parser.y;
-		switch (parser.token.type) {
-		case TK_LBRACKET: tag(&parser);      break;
-		case TK_INTEGER:  movetext(&parser); break;
-		case TK_SYMBOL:	  movetext(&parser); break;
-		case TK_ASTERISK: movetext(&parser); break;
-		default: 	  next_token(&parser);
-		}
-	}
-
-	// finalization
-	pgn->tagcount = vec_len(pgn->tags);
-	pgn->movecount = vec_len(pgn->moves);
-
-	char* last = pgn->moves[pgn->movecount - 1].text;
-	if (strcmp(last, "*") == 0
-		|| strcmp(last, "1-0") == 0
-		|| strcmp(last, "0-1") == 0
-		|| strcmp(last, "1/2-1/2") == 0
-	) {
-		vec_pop(pgn->moves);
-		--pgn->movecount;
-	} else {
-		fprintf(stderr, "Warning: Movetext termination marker not found!\n");
-	}
+	while (!accept(&parser, TK_EOF))
+		pgn_game_block(&parser);
 
 	// cleanup
 	fclose(parser.file);
@@ -353,10 +399,16 @@ enum pgn_result pgn_read(struct pgn* pgn, char* filename)
 
 void pgn_free(struct pgn *pgn)
 {
-	for (int i = 0; i < pgn->tagcount; ++i) {
-		free(pgn->tags[i].name);
-		free(pgn->tags[i].desc);
+	for (int i = 0; i < vec_len(pgn->games); ++i) {
+		struct pgn_game *game = &pgn->games[i];
+		for (int j = 0; j < vec_len(game->tags); ++j) {
+			free(game->tags[j].name);
+			free(game->tags[j].desc);
+		}
+		vec_free(game->tags);
+
+		for (int k = 0; k < vec_len(game->plies); ++k)
+			free(game->plies[k].comment);
+		vec_free(game->plies);
 	}
-	vec_free(pgn->tags);
-	vec_free(pgn->moves);
 }

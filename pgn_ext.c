@@ -162,7 +162,7 @@ static move find_move(struct board *board, struct moveinfo *info)
 	return 0;
 }
 
-int pgn_to_moves(const struct pgn *pgn, move *moves)
+int pgn_to_moves(const struct pgn_game *game, move *moves)
 {
 	if (!attacks_table_initilized())
 		init_lineattacks_table();
@@ -172,10 +172,10 @@ int pgn_to_moves(const struct pgn *pgn, move *moves)
 	board_init(&board);
 
 	struct moveinfo info;
-	for (int i = 0; i < pgn->movecount; ++i) {
+	for (int i = 0; i < vec_len(game->plies); ++i) {
 		// white moves are even and black moves are odd, 0-based index
 		enum color color = (i & 1);
-		get_moveinfo(pgn->moves[i].text, color, &info);
+		get_moveinfo(game->plies[i].text, color, &info);
 		move move = find_move(&board, &info);
 
 		if (move) {

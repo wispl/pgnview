@@ -1,6 +1,9 @@
 #ifndef PARSER_H
 #define PARSER_H
 
+#include <stddef.h>
+#include <stdlib.h>
+
 // stretchy buffer from skeeto's growable-buf
 #define VEC_INIT_SIZE 8
 struct vec {
@@ -10,6 +13,7 @@ struct vec {
 };
 
 #define containerof(ptr) ((struct vec *)((char *)(ptr) - offsetof(struct vec, buffer)))
+#define vec_init(vec)    (vec = 0)
 #define vec_free(vec)                             \
 	do {                                      \
 		if ((vec)) {                      \
@@ -17,9 +21,10 @@ struct vec {
 				(vec) = 0;        \
 		}                                 \
 	} while (0)
-#define vec_size(vec)    ((vec) ? containerof((vec))->size : 0)
-#define vec_len(vec)     ((vec) ? containerof((vec))->len : 0)
-#define vec_pop(vec) ((vec)[--containerof((vec))->len])
+#define vec_size(vec) ((vec) ? containerof((vec))->size : 0)
+#define vec_len(vec)  ((vec) ? containerof((vec))->len : 0)
+#define vec_last(vec) ((vec)[vec_len((vec))])
+#define vec_pop(vec)  ((vec)[--containerof((vec))->len])
 #define vec_push(vec, e)                                         \
 	do {                                                     \
 		if (vec_len((vec)) == vec_size((vec)))           \
@@ -114,16 +119,16 @@ struct pgn_ply {
 
 /// This holds all tags and plies of a game
 struct pgn_game {
-	int tagcount;
-	struct pgn_tag *tags;	// all tags in parsed order
-	int plycount;
+	enum pgn_result result; // whether the parsed file failed or not 
+	struct pgn_tag *tags;	// all tags in parsed order 
 	struct pgn_ply *plies;	// all plies in parsed order
 };
 
 /// A pgn can hold multiple games
 struct pgn {
-	pgn_game *games;
-	int gamecount;
+	struct pgn_game *games; // all games in parsed order
+	char* filename;         // filename of the parsed file
+	int number_errors;      // number of games with errors 
 };
 
 enum pgn_result pgn_read(struct pgn *pgn, char *filename);

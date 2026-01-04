@@ -117,7 +117,7 @@ void draw_board(struct board *board)
 	}
 }
 
-void draw_moves(const struct pgn *pgn, int current)
+void draw_moves(const struct pgn_game *game, int current)
 {
 	int x = RIGHTX + CELLW;
 	int y = LEFTY  + 2;
@@ -129,7 +129,7 @@ void draw_moves(const struct pgn *pgn, int current)
 		// number indicator at white moves (even index)
 		if (!(i & 1)) {
 			// supports up to 3 digit amount of moves
-			if (i < pgn->movecount) {
+			if (i < vec_len(game->plies)) {
 				tb_printf(x, y, 0, 0, "%-4d", (i / 2) + 1);
 			} else {
 				tb_printf(x, y, 0, 0, "%4s", " ");
@@ -137,7 +137,7 @@ void draw_moves(const struct pgn *pgn, int current)
 			x += 4;
 		}
 
-		char *str = (i < pgn->movecount) ? pgn->moves[i].text : " ";
+		char *str = (i < vec_len(game->plies)) ? game->plies[i].text : " ";
 		tb_printf(x, y, (current == i) * HIGHLIGHT_COLOR, 0, "%-8s", str);
 		x += 8;
 
@@ -202,13 +202,14 @@ int main(int argc, char **argv)
 		}
 	}
 
-	state.moves   = malloc_array(state.pgn.movecount, sizeof(move));
-	int moves_len = pgn_to_moves(&state.pgn, state.moves);
+	struct pgn_game *game = &state.pgn.games[0];
+	state.moves   = malloc_array(vec_len(game->plies), sizeof(move));
+	int moves_len = pgn_to_moves(game, state.moves);
 
-	if (moves_len != state.pgn.movecount) {
+	if (moves_len != vec_len(game->plies)) {
 		fprintf(stderr,
 			"Unable parse all moves, %d out of %d, maybe some moves are illegal?\n", 
-			moves_len, state.pgn.movecount);
+			moves_len, vec_len(game->plies));
 		return 1;
 	}
 
@@ -217,7 +218,7 @@ int main(int argc, char **argv)
 
 	// initial draw
 	draw_board(&state.board);
-	draw_moves(&state.pgn, state.moves_idx);
+	draw_moves(game, state.moves_idx);
 	tb_present();
 
 	int result;
@@ -236,7 +237,7 @@ int main(int argc, char **argv)
 		case TB_EVENT_RESIZE:
 			tb_clear();
 			draw_board(&state.board);
-			draw_moves(&state.pgn, state.moves_idx);
+			draw_moves(game, state.moves_idx);
 			tb_present();
 			break;
 		case TB_EVENT_KEY:
@@ -244,7 +245,7 @@ int main(int argc, char **argv)
 				running = false;
 		
 			if (event.key == TB_KEY_ARROW_RIGHT) {
-				if (state.moves_idx < state.pgn.movecount - 1)
+				if (state.moves_idx < vec_len(game->plies) - 1)
 					do_move(false);
 			}
 			if (event.key == TB_KEY_ARROW_LEFT) {
@@ -256,10 +257,10 @@ int main(int argc, char **argv)
 					do_move(true);
 			}
 			if (event.key == TB_KEY_ARROW_DOWN) {
-				while (state.moves_idx != state.pgn.movecount - 1)
+				while (state.moves_idx != vec_len(game) - 1)
 					do_move(false);
 			}
-			draw_moves(&state.pgn, state.moves_idx);
+			draw_moves(game, state.moves_idx);
 			tb_present();
 			break;
 		default: break;
