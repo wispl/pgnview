@@ -23,7 +23,7 @@ struct vec {
 	} while (0)
 #define vec_size(vec) ((vec) ? containerof((vec))->size : 0)
 #define vec_len(vec)  ((vec) ? containerof((vec))->len : 0)
-#define vec_last(vec) ((vec)[vec_len((vec))])
+#define vec_last(vec) ((vec)[vec_len((vec)) == 0 ? 0 : (vec_len((vec)) - 1)])
 #define vec_pop(vec)  ((vec)[--containerof((vec))->len])
 #define vec_push(vec, e)                                         \
 	do {                                                     \
