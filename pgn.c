@@ -339,7 +339,9 @@ static void move_indicator(struct parser *parser)
 		expect(parser, TK_PERIOD);
 }
 
-/// TODO: handle comments, NAG tokens, and RAV
+/// insane recursive nonsense in coming 
+static void rav(struct parser *parser);
+
 /// A ply is of a symbol, optionally along with a comment, NAG and RAV
 /// (Recursive Annotation Variations), all of which can appear at once
 /// and in any order.
@@ -354,7 +356,8 @@ static void ply(struct parser *parser)
 	// NAGs or comments for a move, so assume it is legal
 	// There is not really a reason to have multiple NAGS or comments 
 	// but there is also not a reason why you couldn't have them either.
-	while (accept(parser, TK_NAG) || accept(parser, TK_COMMENT)) {
+	while (accept(parser, TK_NAG) || accept(parser, TK_COMMENT) ||
+	       accept(parser, TK_LPAREN)) {
 		if (accept(parser, TK_NAG)) {
 			expect(parser, TK_NAG);
 			char *str = parser->prev_token.value;
@@ -384,6 +387,9 @@ static void ply(struct parser *parser)
 			expect(parser, TK_COMMENT);
 			copy_token_value(&ply.comment, &parser->prev_token);
 		}
+
+		if (accept(parser, TK_LPAREN))
+			rav(parser);
 	}
 
 	if (parser->unhandled_error) {
@@ -428,6 +434,23 @@ static void movetext(struct parser *parser)
 			ply(parser);
 	}
 }
+
+/// RAV (recursive annotation variation) specifies a variation, for example
+///
+///   1. d4 d5 (1 ... d6 (1 ... e6) (1 ... f5) 2. e4 e5 3. d5 f5) (1 ... Nf5)
+///
+/// is allowed, which is actually insane. And NAGs and comments can still
+/// show up in this by the way.
+static void rav(struct parser *parser)
+{
+	expect(parser, TK_LPAREN);
+	movetext(parser);
+	while (accept(parser, TK_LPAREN))
+		rav(parser);
+	movetext(parser);
+	expect(parser, TK_RPAREN);
+}
+
 
 /// A pgn game is a series of tags followed by a movetext and finally a
 /// termination marker. The termination markers are 
