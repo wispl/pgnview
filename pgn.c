@@ -9,14 +9,12 @@
 enum token_type {
 	TK_LBRACKET,	// [
 	TK_RBRACKET, 	// ]
-	TK_LBRACE,	// {
-	TK_RBRACE, 	// }
 	TK_LPAREN,	// (
 	TK_RPAREN,	// )
 	TK_LANGLE,	// <
 	TK_RANGLE,	// >
 	TK_PERIOD,	// .
-	TK_SEMICOLON,	// ; along with any text until \n or \r
+	TK_COMMENT,	// ; along with any text until \n or anything inside { }
 	TK_TERMINATION,	// *, 1-0, 0-1, 1/2-1/2 
 	TK_STRING,	// quote delimited characters
 	TK_SYMBOL,	// letter or digits followed by any of [A-Za-z0-9_+#=:-]
@@ -30,14 +28,12 @@ enum token_type {
 static const char* token_str[TK_MAX] = {
 	[TK_LBRACKET]     = "LBRACKET",
 	[TK_RBRACKET]     = "RBRACKET",
-	[TK_LBRACE]       = "LBRACE",
-	[TK_RBRACE]       = "RBRACE",
 	[TK_LPAREN]       = "LPAREN",
 	[TK_RPAREN]       = "RPAREN",
 	[TK_LANGLE]       = "LANGE",
 	[TK_RANGLE]       = "RANGLE",
 	[TK_PERIOD]       = "PERIOD",
-	[TK_SEMICOLON]    = "SEMICOLON",
+	[TK_COMMENT]      = "COMMENT",
 	[TK_TERMINATION]  = "TERMINATION",
 	[TK_STRING]       = "STRING",
 	[TK_SYMBOL]       = "SYMBOL",
@@ -160,13 +156,24 @@ static void nag(struct parser *parser)
 		add_to_token(parser, advance(parser));
 }
 
-/// Not exactly a token defined by the standard, but I think this is a useful
-/// distinction to have when lexing and parsing
-static void comment(struct parser *parser)
+/// Comment tokens are not in the standard but I included it to make parsing
+/// easy. Line comment continues until the end of a line.
+static void line_comment(struct parser *parser)
 {
-	parser->token.type = TK_SEMICOLON;
-	while (peek(parser) != '\n')
-		add_to_token(parser, advance(parser));
+	parser->token.type = TK_COMMENT;
+	char c;
+	while ((c = advance(parser)) != '\n')
+		add_to_token(parser, c);
+}
+
+/// A brace comment is whatever is inside { }. These cannot be nested. 
+/// TODO: handle error on nesting?
+static void brace_comment(struct parser *parser)
+{
+	parser->token.type = TK_COMMENT;
+	char c;
+	while ((c = advance(parser)) != '}')
+		add_to_token(parser, c);
 }
 
 // This just allows me to use fake ranges for the switch statement
@@ -179,6 +186,9 @@ static char transform_char(char c) {
 
 static void next_token(struct parser *parser)
 {
+	// TODO: add verbose variable and use this for debugging
+	/* printf("parsed %s with value %.*s\n", token_str[parser->token.type], parser->token.len, parser->token.value); */
+
 	parser->prev_token = parser->token;
 	// Clear out the current token value, no need to clear out .value itself
 	// since we will use memcpy to pull the value out of the token, that is,
@@ -193,8 +203,6 @@ static void next_token(struct parser *parser)
 		case ']': return terminal(parser, c, TK_RBRACKET);
 		case '(': return terminal(parser, c, TK_LPAREN);
 		case ')': return terminal(parser, c, TK_RPAREN);
-		case '{': return terminal(parser, c, TK_LBRACE);
-		case '}': return terminal(parser, c, TK_RBRACE);
 		case '<': return terminal(parser, c, TK_LANGLE);
 		case '>': return terminal(parser, c, TK_RANGLE);
 		case '.': return terminal(parser, c, TK_PERIOD);
@@ -203,7 +211,8 @@ static void next_token(struct parser *parser)
 		// Complex tokens
 		case '"': return string(parser);
 		case '$': return nag(parser);
-		case ';': return comment(parser);
+		case ';': return line_comment(parser);
+		case '{': return brace_comment(parser);
 		case 'a':
 			add_to_token(parser, c);
 			return symbol(parser);
@@ -304,6 +313,8 @@ static void tag(struct parser *parser)
 static void move_indicator(struct parser *parser)
 {
 	expect(parser, TK_INTEGER);
+	// TODO: remove? I don't think this error can ever happen since we check
+	// for TK_INTEGER beforehand
 	if (parser->unhandled_error) {
 		fprintf(stderr, parser_err, parser->y, parser->x, "move indicator");
 		parser->unhandled_error = false;
@@ -323,6 +334,22 @@ static void ply(struct parser *parser)
 
 	if (expect(parser, TK_SYMBOL))
 		memcpy(&ply.text, &parser->prev_token.value, parser->prev_token.len);
+
+	// I could not find anything on the standard forbidding multiple
+	// NAGs or comments for a move, so assume it is legal
+	// There is not really a reason to have multiple NAGS or comments 
+	// but there is also not a reason why you couldn't have them either.
+	while (accept(parser, TK_NAG) || accept(parser, TK_COMMENT)) {
+		if (accept(parser, TK_NAG)) {
+			expect(parser, TK_NAG);
+			ply.nag = strtol(parser->prev_token.value, NULL, 10);
+		}
+
+		if (accept(parser, TK_COMMENT)) {
+			expect(parser, TK_COMMENT);
+			copy_token_value(&ply.comment, &parser->prev_token);
+		}
+	}
 
 	if (parser->unhandled_error) {
 		fprintf(stderr, parser_err, parser->y, parser->x, "ply");
