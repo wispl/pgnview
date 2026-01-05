@@ -6,6 +6,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+// The '/' is technically not specified to be part of a SYMBOL in the standard,
+// but since 1/2-1/2 is a possibility in the movetext, I think it should count
+// as being part of a symbol
 enum token_type {
 	TK_LBRACKET,	// [
 	TK_RBRACKET, 	// ]
@@ -17,7 +20,7 @@ enum token_type {
 	TK_COMMENT,	// ; along with any text until \n or anything inside { }
 	TK_TERMINATION,	// *, 1-0, 0-1, 1/2-1/2 
 	TK_STRING,	// quote delimited characters
-	TK_SYMBOL,	// letter or digits followed by any of [A-Za-z0-9_+#=:-]
+	TK_SYMBOL,	// letter or digits followed by any of [A-Za-z0-9_+#=:-/]
 	TK_INTEGER,	// sequence of decimal digits
 	TK_NAG,		// $ followed by digits
 	TK_UNKNOWN,     // unparsable tokens
@@ -81,7 +84,7 @@ struct parser {
 
 static inline bool is_symbol(char c)
 {
-	return isalnum(c) || c == '_' || c == '+' || c == '#'
+	return isalnum(c) || c == '_' || c == '+' || c == '#' || c == '/'
 			  || c == '=' || c == ':' || c == '-';
 }
 
