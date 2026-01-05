@@ -114,6 +114,18 @@ static void terminal(struct parser *parser, char c, enum token_type type)
 	parser->token.len = 1;
 }
 
+// Collapses periods or treat the period as ellipses depending on the number
+// of periods, see `void move_indicator()` for more information on this
+static void period(struct parser *parser)
+{
+	while (peek(parser) == '.')
+		add_to_token(parser, advance(parser));
+
+	// If there are three periods (ellipse), then we treat it as a symbol
+	// because it indicates a white move
+	parser->token.type = (parser->token.len == 3) ? TK_SYMBOL : TK_PERIOD;
+}
+
 /// String tokens, these start with a " and end with a " 
 static void string(struct parser *parser)
 {
@@ -215,7 +227,6 @@ static void next_token(struct parser *parser)
 		case ')': return terminal(parser, c, TK_RPAREN);
 		case '<': return terminal(parser, c, TK_LANGLE);
 		case '>': return terminal(parser, c, TK_RANGLE);
-		case '.': return terminal(parser, c, TK_PERIOD);
 		case '*': return terminal(parser, c, TK_TERMINATION);
 		case EOF: return terminal(parser, c, TK_EOF);
 		// NAG shorthands
@@ -228,6 +239,9 @@ static void next_token(struct parser *parser)
 		case '$': return nag(parser);
 		case ';': return line_comment(parser);
 		case '{': return brace_comment(parser);
+		case '.':
+			add_to_token(parser, c);
+			return period(parser);
 		case 'a':
 			add_to_token(parser, c);
 			return symbol(parser);
@@ -335,7 +349,9 @@ static void move_indicator(struct parser *parser)
 		parser->unhandled_error = false;
 		parser->result = PGN_MOVE_PARSE_ERROR;
 	}
-	while (accept(parser, TK_PERIOD))
+	// Since we collapse all the periods into a single token, we do not need
+	// a while loop for this (single token instead of multiple)
+	if (accept(parser, TK_PERIOD))
 		expect(parser, TK_PERIOD);
 }
 
@@ -435,6 +451,7 @@ static void movetext(struct parser *parser)
 	}
 }
 
+/// TODO: store data somewhere in pgn_ply
 /// RAV (recursive annotation variation) specifies a variation, for example
 ///
 ///   1. d4 d5 (1 ... d6 (1 ... e6) (1 ... f5) 2. e4 e5 3. d5 f5) (1 ... Nf5)
