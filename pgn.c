@@ -421,6 +421,9 @@ static void movetext(struct parser *parser)
 
 		ply(parser);
 
+		if (accept(parser, TK_INTEGER))
+			move_indicator(parser);
+
 		if (accept(parser, TK_SYMBOL)) 
 			ply(parser);
 	}
