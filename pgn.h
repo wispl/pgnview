@@ -67,6 +67,13 @@ enum pgn_result {
 	PGN_MOVE_PARSE_ERROR, // Could not parse move, syntax error
 };
 
+enum game_result {
+	WHITE_WIN,  // 1-0
+	BLACK_WIN,  // 0-1
+	DRAW,       // 1/2-1/2
+	UNKNOWN     // *
+};
+
 /// A pgn tag gives metadata about the game, here are a couple
 /// of example tags for a game
 ///
@@ -119,9 +126,10 @@ struct pgn_ply {
 
 /// This holds all tags and plies of a game
 struct pgn_game {
-	enum pgn_result result; // whether the parsed file failed or not 
-	struct pgn_tag *tags;	// all tags in parsed order 
-	struct pgn_ply *plies;	// all plies in parsed order
+	enum pgn_result result;       // whether the parsed file failed or not 
+	struct pgn_tag *tags;	      // all tags in parsed order 
+	struct pgn_ply *plies;	      // all plies in parsed order
+	enum game_result termination; // result of the game (termination marker)
 };
 
 /// A pgn can hold multiple games

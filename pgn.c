@@ -383,7 +383,17 @@ static void pgn_game_block(struct parser *parser)
 	while (accept(parser, TK_LBRACKET))
 		tag(parser);
 	movetext(parser);
-	expect(parser, TK_TERMINATION);
+
+	if (expect(parser, TK_TERMINATION)) {
+		if (strncmp(parser->token.value, "1/2-1/2", 7) == 0)
+			game.termination = DRAW;
+		else if (strncmp(parser->token.value, "1-0", 3) == 0)
+			game.termination = WHITE_WIN;
+		else if (strncmp(parser->token.value, "0-1", 3) == 0)
+			game.termination = BLACK_WIN;
+		else
+			game.termination = UNKNOWN;
+	}
 }
 
 enum pgn_result pgn_read(struct pgn* pgn, char* filename)
