@@ -179,6 +179,13 @@ static void brace_comment(struct parser *parser)
 		add_to_token(parser, c);
 }
 
+static void nag_shorthand(struct parser *parser)
+{
+	parser->token.type = TK_NAG;
+	if (peek(parser) == '!' || peek(parser) == '?')
+		add_to_token(parser, advance(parser));
+}
+
 // This just allows me to use fake ranges for the switch statement
 static char transform_char(char c) {
 	if (isalnum(c))
@@ -211,6 +218,11 @@ static void next_token(struct parser *parser)
 		case '.': return terminal(parser, c, TK_PERIOD);
 		case '*': return terminal(parser, c, TK_TERMINATION);
 		case EOF: return terminal(parser, c, TK_EOF);
+		// NAG shorthands
+		case '!':
+		case '?':
+			add_to_token(parser, c);
+			return nag_shorthand(parser);
 		// Complex tokens
 		case '"': return string(parser);
 		case '$': return nag(parser);
@@ -345,7 +357,27 @@ static void ply(struct parser *parser)
 	while (accept(parser, TK_NAG) || accept(parser, TK_COMMENT)) {
 		if (accept(parser, TK_NAG)) {
 			expect(parser, TK_NAG);
-			ply.nag = strtol(parser->prev_token.value, NULL, 10);
+			char *str = parser->prev_token.value;
+			char *end;
+			ply.nag = strtol(str, &end, 10);
+			// Probably not a number, might be the shorthands
+			if (*end) {
+				if (strncmp(str, "!", 1) == 0)
+					ply.nag = 1;
+				else if (strncmp(str, "?", 1) == 0)
+					ply.nag = 2;
+				else if (strncmp(str, "!!", 2) == 0)
+					ply.nag = 3;
+				else if (strncmp(str, "??", 2) == 0)
+					ply.nag = 4;
+				else if (strncmp(str, "!?", 2) == 0)
+					ply.nag = 5;
+				else if (strncmp(str, "?!", 2) == 0)
+					ply.nag = 6;
+				else
+					ply.nag = -1;
+				fprintf(stderr, "Warning(Parser) unknown NAG");
+			}
 		}
 
 		if (accept(parser, TK_COMMENT)) {
