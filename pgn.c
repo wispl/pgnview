@@ -325,7 +325,8 @@ static void ply(struct parser *parser)
 		parser->result = PGN_MOVE_PARSE_ERROR;
 		free(ply.comment);
 	} else {
-		vec_push(vec_last(parser->pgn->games).plies, ply);
+		struct pgn_game *game = &vec_last(parser->pgn->games);
+		vec_push(game->plies, ply);
 	}
 }
 
