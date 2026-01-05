@@ -49,7 +49,8 @@ static const char* token_str[TK_MAX] = {
 
 static const char *syntax_err =
 	"Error(Syntax) |%d, col %d|: expected token '%s' "
-	"but found token '%s' with value '%s'\n";
+	"but found token '%s' with value '%.*s'. Previous token "
+	"was '%s' with value '%.*s'.\n";
 
 static const char *parser_err =
 	"Error(Parser) |%d, col %d|: error occurred trying to parse '%s'\n";
@@ -238,7 +239,11 @@ static bool expect(struct parser *parser, enum token_type type)
 		parser->x,
 	 	token_str[type],
 	 	token_str[parser->token.type],
-	 	parser->token.value);
+		parser->token.len,
+	 	parser->token.value,
+	 	token_str[parser->prev_token.type],
+		parser->prev_token.len,
+	 	parser->prev_token.value);
 	return false;
 }
 
