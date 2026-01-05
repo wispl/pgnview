@@ -30,6 +30,10 @@ u64 perft(int depth)
 int
 main(int argc, char **argv)
 {
+	if (argc < 2) {
+		printf("Please input a number for the depth!\n");
+		return 0;
+	}
 	int depth = strtol(argv[1], NULL, 10);
 	board_init(&board);
 	init_lineattacks_table();
