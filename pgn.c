@@ -444,4 +444,5 @@ void pgn_free(struct pgn *pgn)
 			free(game->plies[k].comment);
 		vec_free(game->plies);
 	}
+	vec_free(pgn->games);
 }
