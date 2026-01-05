@@ -126,15 +126,24 @@ static void string(struct parser *parser)
 
 static void symbol(struct parser *parser)
 {
-	bool symbol = false;
+	// Assume all digits
+	bool integer = true;
+	// We added a char earlier, it could be a letter
+	// which would would mean our assumption above is false
+	if (isdigit(parser->token.value[0]) == 0)
+		integer = false;
+
 	while (is_symbol(peek(parser))) {
 		char c = advance(parser);
 		add_to_token(parser, c);
-		symbol |= (isdigit(c) == false);
+		// Found a non-digit, so this is a symbol
+		// NOTE: isdigit returns zero if it is not a digit
+		integer &= (isdigit(c) != 0);
 	}
 
-	parser->token.type = symbol ? TK_SYMBOL : TK_INTEGER;
-	if (symbol &&
+	parser->token.type = integer ? TK_INTEGER : TK_SYMBOL;
+	// But the symbol might be a termination marker
+	if (parser->token.type == TK_SYMBOL &&
 	    (strncmp(parser->token.value, "1/2-1/2", 7) == 0 ||
 	     strncmp(parser->token.value, "1-0", 3) == 0 ||
 	     strncmp(parser->token.value, "0-1", 3) == 0)) {
@@ -194,7 +203,9 @@ static void next_token(struct parser *parser)
 		case '"': return string(parser);
 		case '$': return nag(parser);
 		case ';': return comment(parser);
-		case 'a': return symbol(parser);
+		case 'a':
+			add_to_token(parser, c);
+			return symbol(parser);
 		// Ignore whitespace
 		case '\t':
 		case '\r':
