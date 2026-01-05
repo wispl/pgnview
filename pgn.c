@@ -28,23 +28,23 @@ enum token_type {
 };
 
 static const char* token_str[TK_MAX] = {
-	[TK_LBRACKET]     = "[",
-	[TK_RBRACKET]     = "]",
-	[TK_LBRACE]       = "{",
-	[TK_RBRACE]       = "}",
-	[TK_LPAREN]       = "(",
-	[TK_RPAREN]       = ")",
-	[TK_LANGLE]       = "<",
-	[TK_RANGLE]       = ">",
-	[TK_PERIOD]       = ".",
-	[TK_SEMICOLON]    = ";",
-	[TK_TERMINATION]  = "termination",
-	[TK_STRING]       = "string",
-	[TK_SYMBOL]       = "symbol",
-	[TK_INTEGER]      = "integer",
-	[TK_NAG]          = "nag",
-	[TK_UNKNOWN]      = "unknown",
-	[TK_EOF]          = "eof"
+	[TK_LBRACKET]     = "LBRACKET",
+	[TK_RBRACKET]     = "RBRACKET",
+	[TK_LBRACE]       = "LBRACE",
+	[TK_RBRACE]       = "RBRACE",
+	[TK_LPAREN]       = "LPAREN",
+	[TK_RPAREN]       = "RPAREN",
+	[TK_LANGLE]       = "LANGE",
+	[TK_RANGLE]       = "RANGLE",
+	[TK_PERIOD]       = "PERIOD",
+	[TK_SEMICOLON]    = "SEMICOLON",
+	[TK_TERMINATION]  = "TERMINATION",
+	[TK_STRING]       = "STRING",
+	[TK_SYMBOL]       = "SYMBOL",
+	[TK_INTEGER]      = "INTEGER",
+	[TK_NAG]          = "NAG",
+	[TK_UNKNOWN]      = "UNKNOWN",
+	[TK_EOF]          = "EOF"
 };
 
 static const char *syntax_err =
