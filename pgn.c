@@ -317,7 +317,7 @@ static void ply(struct parser *parser)
 	struct pgn_ply ply = {0};
 
 	if (expect(parser, TK_SYMBOL))
-		memcpy(&ply.text, &parser->token.value, parser->token.len);
+		memcpy(&ply.text, &parser->prev_token.value, parser->prev_token.len);
 
 	if (parser->unhandled_error) {
 		fprintf(stderr, parser_err, parser->y, parser->x, "ply");
