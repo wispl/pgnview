@@ -250,12 +250,12 @@ static bool expect(struct parser *parser, enum token_type type)
 /// Copies the value of token to a buffer, the buffer must be freed
 static inline void copy_token_value(char **buffer, struct token *token)
 {
-	void *tmp = malloc(token->len);
+	char *tmp = malloc(sizeof(char) * (token->len + 1));
 	if (tmp == NULL)
 		abort();
 	*buffer = tmp;
 	memcpy(*buffer, token->value, token->len);
-	*buffer[token->len + 1] = '\0';
+	tmp[token->len] = '\0';
 }
 
 /// Tag is made of the following tokens: "BRACKET SYMBOL STRING BRACKET"
