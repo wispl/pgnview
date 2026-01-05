@@ -304,6 +304,11 @@ static void tag(struct parser *parser)
 static void move_indicator(struct parser *parser)
 {
 	expect(parser, TK_INTEGER);
+	if (parser->unhandled_error) {
+		fprintf(stderr, parser_err, parser->y, parser->x, "move indicator");
+		parser->unhandled_error = false;
+		parser->result = PGN_MOVE_PARSE_ERROR;
+	}
 	while (accept(parser, TK_PERIOD))
 		expect(parser, TK_PERIOD);
 }
