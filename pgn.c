@@ -280,7 +280,8 @@ static void tag(struct parser *parser)
 		parser->unhandled_error = false;
 		parser->result = PGN_TAG_PARSE_ERROR;
 	} else {
-		vec_push(vec_last(parser->pgn->games).tags, tag);
+		struct pgn_game *game = &vec_last(parser->pgn->games);
+		vec_push(game->tags, tag);
 	}
 }
 
