@@ -355,19 +355,35 @@ static void move_indicator(struct parser *parser)
 		expect(parser, TK_PERIOD);
 }
 
-/// insane recursive nonsense in coming 
-static void rav(struct parser *parser);
+/// Insane recursive nonsense incoming 
+static void movetext(struct parser *parser, struct pgn_variation *variation);
+
+/// RAV (recursive annotation variation) specifies a variation, for example
+///
+///   1. d4 d5 (1 ... d6 (1 ... e6) (1 ... f5) 2. e4 e5 3. d5 f5) (1 ... Nf5)
+///
+/// is allowed, which is actually insane. And NAGs and comments can still
+/// show up in this by the way.
+static void rav(struct parser *parser, struct pgn_variation *variation)
+{
+	expect(parser, TK_LPAREN);
+	movetext(parser, variation);
+	expect(parser, TK_RPAREN);
+}
 
 /// A ply is of a symbol, optionally along with a comment, NAG and RAV
 /// (Recursive Annotation Variations), all of which can appear at once
 /// and in any order.
-static void ply(struct parser *parser)
+static void ply(struct parser *parser, struct pgn_variation *variation)
 {
 	struct pgn_ply ply = {0};
 
 	if (expect(parser, TK_SYMBOL))
 		memcpy(&ply.text, &parser->prev_token.value, parser->prev_token.len);
 
+	// TODO: as of right now, this actually overrides the previous
+	// nag or comment, I think this is probably correct, but not sure
+	//
 	// I could not find anything on the standard forbidding multiple
 	// NAGs or comments for a move, so assume it is legal
 	// There is not really a reason to have multiple NAGS or comments 
@@ -395,7 +411,7 @@ static void ply(struct parser *parser)
 					ply.nag = 6;
 				else
 					ply.nag = -1;
-				fprintf(stderr, "Warning(Parser) unknown NAG");
+				fprintf(stderr, parser_err, parser->y, parser->x, "unknown NAG");
 			}
 		}
 
@@ -404,8 +420,11 @@ static void ply(struct parser *parser)
 			copy_token_value(&ply.comment, &parser->prev_token);
 		}
 
-		if (accept(parser, TK_LPAREN))
-			rav(parser);
+		if (accept(parser, TK_LPAREN)) {
+			struct pgn_variation variation = {0};
+			vec_push(ply.variations, variation);
+			rav(parser, &variation);
+		}
 	}
 
 	if (parser->unhandled_error) {
@@ -414,8 +433,12 @@ static void ply(struct parser *parser)
 		parser->result = PGN_MOVE_PARSE_ERROR;
 		free(ply.comment);
 	} else {
-		struct pgn_game *game = &vec_last(parser->pgn->games);
-		vec_push(game->plies, ply);
+		if (variation == NULL) {
+			struct pgn_game *game = &vec_last(parser->pgn->games);
+			vec_push(game->plies, ply);
+		} else {
+			vec_push(variation->plies, ply);
+		}
 	}
 }
 
@@ -435,39 +458,21 @@ static void ply(struct parser *parser)
 /// The standard seems to indicate superfluous move indicators are allowed as
 /// long as they are correct. For now, we are going to be lax and not check for
 /// correctness of the indicators, though that is something to consider
-static void movetext(struct parser *parser)
+static void movetext(struct parser *parser, struct pgn_variation *variation)
 {
 	while (accept(parser, TK_SYMBOL) || accept(parser, TK_INTEGER)) {
 		if (accept(parser, TK_INTEGER))
 			move_indicator(parser);
 
-		ply(parser);
+		ply(parser, variation);
 
 		if (accept(parser, TK_INTEGER))
 			move_indicator(parser);
 
 		if (accept(parser, TK_SYMBOL)) 
-			ply(parser);
+			ply(parser, variation);
 	}
 }
-
-/// TODO: store data somewhere in pgn_ply
-/// RAV (recursive annotation variation) specifies a variation, for example
-///
-///   1. d4 d5 (1 ... d6 (1 ... e6) (1 ... f5) 2. e4 e5 3. d5 f5) (1 ... Nf5)
-///
-/// is allowed, which is actually insane. And NAGs and comments can still
-/// show up in this by the way.
-static void rav(struct parser *parser)
-{
-	expect(parser, TK_LPAREN);
-	movetext(parser);
-	while (accept(parser, TK_LPAREN))
-		rav(parser);
-	movetext(parser);
-	expect(parser, TK_RPAREN);
-}
-
 
 /// A pgn game is a series of tags followed by a movetext and finally a
 /// termination marker. The termination markers are 
@@ -487,7 +492,7 @@ static void pgn_game_block(struct parser *parser)
 
 	while (accept(parser, TK_LBRACKET))
 		tag(parser);
-	movetext(parser);
+	movetext(parser, NULL);
 
 	if (expect(parser, TK_TERMINATION)) {
 		if (strncmp(parser->token.value, "1/2-1/2", 7) == 0)

@@ -107,6 +107,13 @@ struct pgn_tag {
 	char *name, *desc;
 };
 
+/// Variations are difficiult to deal with, they are essentially just a movetext,
+/// but each ply can have multiple variations, and the plies within a variation 
+/// can also have variations.
+struct pgn_variation {
+	struct pgn_ply *plies; 
+};
+
 /// A ply is half of a move, in other words, a move consists of
 /// two plies, one from white, and one from black. Each ply
 /// can be annotated with a comment or NAG if desired. A NAG
@@ -119,9 +126,10 @@ struct pgn_tag {
 /// This ply has text Bb5, with the comment Ruy Lopez opening
 /// and a NAG of 1 which corresponds to a "good move".
 struct pgn_ply {
-	char text[8];	// move encoding in SAN
-	int  nag;	// 0-255 NAG value (optional)
-	char *comment;  // comment (optional)
+	char text[8];	                  // move encoding in SAN
+	int  nag;	                  // 0-255 NAG value (optional)
+	char *comment;                    // comment (optional)
+	struct pgn_variation *variations; // Vector of variations (optional)
 };
 
 /// This holds all tags and plies of a game
