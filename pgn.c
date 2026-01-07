@@ -338,17 +338,9 @@ static void tag(struct parser *parser)
 /// the ... actually denotes a move by white so that has to be handled
 /// specifically Therefore the ... in "1............ d6" does not count but
 /// "1... d6" does but the following "1......... ... d6" is fine.
-/// TODO: handle ellipses
 static void move_indicator(struct parser *parser)
 {
 	expect(parser, TK_INTEGER);
-	// TODO: remove? I don't think this error can ever happen since we check
-	// for TK_INTEGER beforehand
-	if (parser->unhandled_error) {
-		fprintf(stderr, parser_err, parser->y, parser->x, "move indicator");
-		parser->unhandled_error = false;
-		parser->result = PGN_MOVE_PARSE_ERROR;
-	}
 	// Since we collapse all the periods into a single token, we do not need
 	// a while loop for this (single token instead of multiple)
 	if (accept(parser, TK_PERIOD))
