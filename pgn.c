@@ -532,6 +532,21 @@ enum pgn_result pgn_read(struct pgn* pgn, char* filename)
 	return parser.result;
 }
 
+static void pgn_ply_free(struct pgn_ply *ply)
+{
+	free(ply->comment);
+	if (ply->variations != NULL) {
+		for (int i = 0; i < vec_len(ply->variations); ++i) {
+			struct pgn_variation *variation = &ply->variations[i];
+			for (int j = 0; j < vec_len(variation->plies); ++j)
+				pgn_ply_free(&(variation->plies[j]));
+		
+			vec_free(variation->plies);
+		}
+		vec_free(ply->variations);
+	}
+}
+
 void pgn_free(struct pgn *pgn)
 {
 	for (int i = 0; i < vec_len(pgn->games); ++i) {
@@ -543,7 +558,8 @@ void pgn_free(struct pgn *pgn)
 		vec_free(game->tags);
 
 		for (int k = 0; k < vec_len(game->plies); ++k)
-			free(game->plies[k].comment);
+			pgn_ply_free(&game->plies[k]);
+
 		vec_free(game->plies);
 	}
 	vec_free(pgn->games);

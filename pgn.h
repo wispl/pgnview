@@ -129,7 +129,7 @@ struct pgn_ply {
 	char text[8];	                  // move encoding in SAN
 	int  nag;	                  // 0-255 NAG value (optional)
 	char *comment;                    // comment (optional)
-	struct pgn_variation *variations; // Vector of variations (optional)
+	struct pgn_variation *variations; // vector of variations (optional)
 };
 
 /// This holds all tags and plies of a game
