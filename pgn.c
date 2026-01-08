@@ -414,8 +414,8 @@ static void ply(struct parser *parser, struct pgn_variation *variation)
 
 		if (accept(parser, TK_LPAREN)) {
 			struct pgn_variation variation = {0};
-			vec_push(ply.variations, variation);
 			rav(parser, &variation);
+			vec_push(ply.variations, variation);
 		}
 	}
 
