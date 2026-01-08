@@ -4,6 +4,37 @@
 
 // TODO: merge with main program? seems pretty useful in general
 
+// Forward declaration
+static void print_plies(struct pgn_ply *plies);
+
+static void print_variations(struct pgn_variation *variations)
+{
+	for (int i = 0; i < vec_len(variations); ++i) {
+		printf("( ");
+		print_plies(variations[i].plies);
+		printf(" ) ");
+	}
+}
+
+static void print_plies(struct pgn_ply *plies)
+{
+	for (int k = 0; k < vec_len(plies); ++k) {
+		if (k % 2 == 0)
+			printf("%d. ", (k / 2) + 1);
+
+		printf("%s ", plies[k].text);
+
+		if (plies[k].nag > 0)
+			printf("$%d ", plies[k].nag);
+
+		if (plies[k].comment != NULL)
+			printf("{%s} ", plies[k].comment);
+
+		if (plies[k].variations != NULL)
+			print_variations(plies[k].variations);
+	}
+}
+
 // This takes in a pgn file in import format and then prints it out in export
 // format. The difference between the two is that import format has lax
 // constaints but export format is strict. This is a good way to test our
@@ -18,6 +49,8 @@ int main(int argc, char **argv)
 	struct pgn pgn;
 
 	enum pgn_result result =  pgn_read(&pgn, argv[1]);
+	if (result != PGN_OK) 
+		printf("Error at reader: error code %d\n", result);
 
 	for (int i = 0; i < vec_len(pgn.games); ++i) {
 		struct pgn_game *game = &pgn.games[i];
@@ -30,20 +63,9 @@ int main(int argc, char **argv)
 			printf("[%s \"%s\"]\n", game->tags[j].name, game->tags[j].desc);
 
 		printf("\n");
-		for (int k = 0; k < vec_len(game->plies); ++k) {
-			if (k % 2 == 0) {
-				printf("%d. ", (k / 2) + 1);
-			}
-			printf("%s ", game->plies[k].text);
 
-			if (game->plies[k].nag > 0) {
-				printf("$%d ", game->plies[k].nag);
-			}
+		print_plies(game->plies);
 
-			if (game->plies[k].comment != NULL) {
-				printf("{%s} ", game->plies[k].comment);
-			}
-		}
 		switch (game->termination) {
 		case DRAW: printf("1/2-1/2\n"); break;
 		case WHITE_WIN: printf("1-0\n"); break;
