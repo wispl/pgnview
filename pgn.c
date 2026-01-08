@@ -427,6 +427,15 @@ static void ply(struct parser *parser, struct pgn_variation *variation)
 	} else {
 		if (variation == NULL) {
 			struct pgn_game *game = &vec_last(parser->pgn->games);
+			// Some pgn files have something like this 
+			//   3. Ng3 (Bf6) 3 ... d6
+			// to make things neater. In general, if there are moves
+			// already in a list, it does not make sense to insert ...
+			// as that is generally use to indicate a previous position
+			// TODO: decide if should do this in variation branch as well
+			if (strncmp(ply.text, "...", 3) == 0 && vec_len(game->plies) > 0)
+				return;
+
 			vec_push(game->plies, ply);
 		} else {
 			vec_push(variation->plies, ply);
