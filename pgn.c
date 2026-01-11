@@ -355,6 +355,21 @@ static void rav(struct parser *parser, struct pgn_variation *variation)
 	expect(parser, TK_RPAREN);
 }
 
+static void pgn_ply_free(struct pgn_ply *ply)
+{
+	free(ply->comment);
+	if (ply->variations != NULL) {
+		for (int i = 0; i < vec_len(ply->variations); ++i) {
+			struct pgn_variation *variation = &ply->variations[i];
+			for (int j = 0; j < vec_len(variation->plies); ++j)
+				pgn_ply_free(&(variation->plies[j]));
+		
+			vec_free(variation->plies);
+		}
+		vec_free(ply->variations);
+	}
+}
+
 /// A ply is of a symbol, optionally along with a comment, NAG and RAV
 /// (Recursive Annotation Variations), all of which can appear at once
 /// and in any order.
@@ -419,7 +434,7 @@ static void ply(struct parser *parser, struct pgn_variation *variation)
 		fprintf(stderr, parser_err, parser->y, parser->x, "ply");
 		parser->unhandled_error = false;
 		parser->result = PGN_MOVE_PARSE_ERROR;
-		free(ply.comment);
+		pgn_ply_free(&ply);
 	} else {
 		if (variation == NULL) {
 			struct pgn_game *game = &vec_last(parser->pgn->games);
@@ -535,21 +550,6 @@ enum pgn_result pgn_read(struct pgn* pgn, char* filename)
 	// cleanup
 	fclose(parser.file);
 	return parser.result;
-}
-
-static void pgn_ply_free(struct pgn_ply *ply)
-{
-	free(ply->comment);
-	if (ply->variations != NULL) {
-		for (int i = 0; i < vec_len(ply->variations); ++i) {
-			struct pgn_variation *variation = &ply->variations[i];
-			for (int j = 0; j < vec_len(variation->plies); ++j)
-				pgn_ply_free(&(variation->plies[j]));
-		
-			vec_free(variation->plies);
-		}
-		vec_free(ply->variations);
-	}
 }
 
 void pgn_free(struct pgn *pgn)
