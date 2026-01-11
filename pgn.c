@@ -383,21 +383,23 @@ static void ply(struct parser *parser, struct pgn_variation *variation)
 			ply.nag = strtol(str, &end, 10);
 			// Probably not a number, might be the shorthands
 			if (*end) {
-				if (strcmp(str, "!") == 0)
+				if (strcmp(str, "!") == 0) {
 					ply.nag = 1;
-				else if (strcmp(str, "?") == 0)
+				} else if (strcmp(str, "?") == 0) {
 					ply.nag = 2;
-				else if (strcmp(str, "!!") == 0)
+				} else if (strcmp(str, "!!") == 0) {
 					ply.nag = 3;
-				else if (strcmp(str, "??") == 0)
+				} else if (strcmp(str, "??") == 0) {
 					ply.nag = 4;
-				else if (strcmp(str, "!?") == 0)
+				} else if (strcmp(str, "!?") == 0) {
 					ply.nag = 5;
-				else if (strcmp(str, "?!") == 0)
+				} else if (strcmp(str, "?!") == 0) {
 					ply.nag = 6;
-				else
+				} else {
 					ply.nag = -1;
-				fprintf(stderr, parser_err, parser->y, parser->x, "unknown NAG");
+					fprintf(stderr, parser_err, parser->y,
+						parser->x, "unknown NAG");
+				}
 			}
 		}
 
