@@ -48,13 +48,14 @@ static const char* token_str[TK_MAX] = {
 
 static const char *syntax_err =
 	"Error(Syntax) |%d, col %d|: expected token '%s' "
-	"but found token '%s' with value '%.*s'. Previous token "
-	"was '%s' with value '%.*s'.\n";
+	"but found token '%s' with value '%s'. Previous token "
+	"was '%s' with value '%s'.\n";
 
 static const char *parser_err =
 	"Error(Parser) |%d, col %d|: error occurred trying to parse '%s'\n";
 
-/// Note the value stored in the token does not include the null terminator
+/// Note the value stored in the token does includes the null terminator
+/// but the length does not include the null terminator
 struct token {
 	enum token_type type; // type of the token
 	char value[256];      // symbols and strings have max length of 255
@@ -207,7 +208,7 @@ static inline char transform_char(char c)
 static void next_token(struct parser *parser)
 {
 	// TODO: add verbose variable and use this for debugging
-	/* printf("parsed %s with value %.*s\n", token_str[parser->token.type], parser->token.len, parser->token.value); */
+	/* printf("parsed %s with value %s\n", token_str[parser->token.type], parser->token.value); */
 
 	parser->prev_token = parser->token;
 	// Clear out the current token value, no need to clear out .value itself
@@ -219,38 +220,43 @@ static void next_token(struct parser *parser)
 		char c = advance(parser);
 		switch (transform_char(c)) {
 		// Terminal tokens
-		case '[': return terminal(parser, c, TK_LBRACKET);
-		case ']': return terminal(parser, c, TK_RBRACKET);
-		case '(': return terminal(parser, c, TK_LPAREN);
-		case ')': return terminal(parser, c, TK_RPAREN);
-		case '<': return terminal(parser, c, TK_LANGLE);
-		case '>': return terminal(parser, c, TK_RANGLE);
-		case '*': return terminal(parser, c, TK_TERMINATION);
-		case EOF: return terminal(parser, c, TK_EOF);
+		case '[': terminal(parser, c, TK_LBRACKET);    goto done;
+		case ']': terminal(parser, c, TK_RBRACKET);    goto done;
+		case '(': terminal(parser, c, TK_LPAREN);      goto done;
+		case ')': terminal(parser, c, TK_RPAREN);      goto done;
+		case '<': terminal(parser, c, TK_LANGLE);      goto done;
+		case '>': terminal(parser, c, TK_RANGLE);      goto done;
+		case '*': terminal(parser, c, TK_TERMINATION); goto done;
+		case EOF: terminal(parser, c, TK_EOF);         goto done;
 		// NAG shorthands
-		case '!':
+		case '!': // fallthrough
 		case '?':
 			add_to_token(parser, c);
-			return nag_shorthand(parser);
+			nag_shorthand(parser);
+			goto done;
 		// Complex tokens
-		case '"': return string(parser);
-		case '$': return nag(parser);
-		case ';': return line_comment(parser);
-		case '{': return brace_comment(parser);
+		case '"': return string(parser);        goto done;
+		case '$': return nag(parser);           goto done;
+		case ';': return line_comment(parser);  goto done;
+		case '{': return brace_comment(parser); goto done;
 		case '.':
 			add_to_token(parser, c);
-			return period(parser);
+			period(parser);
+			goto done;
 		case 'a':
 			add_to_token(parser, c);
-			return symbol(parser);
+			symbol(parser);
+			goto done;
 		// Ignore whitespace
-		case '\t':
-		case '\r':
+		case '\t': // fallthrough
+		case '\r': // fallthrough
 		case ' ': break;
 		case '\n': ++parser->y; parser->x = 0; break;
-		default: return terminal(parser, c, TK_UNKNOWN);
+		default: terminal(parser, c, TK_UNKNOWN); goto done;
 		}
 	}
+done:
+	parser->token.value[parser->token.len] = '\0';
 }
 
 //
@@ -270,16 +276,10 @@ static bool expect(struct parser *parser, enum token_type type)
 	}
 
 	parser->unhandled_error = true;
-	fprintf(stderr, syntax_err,
-		parser->y,
-		parser->x,
+	fprintf(stderr, syntax_err, parser->y, parser->x,
 	 	token_str[type],
-	 	token_str[parser->token.type],
-		parser->token.len,
-	 	parser->token.value,
-	 	token_str[parser->prev_token.type],
-		parser->prev_token.len,
-	 	parser->prev_token.value);
+		token_str[parser->token.type], parser->token.value,
+	 	token_str[parser->prev_token.type], parser->prev_token.value);
 	return false;
 }
 
@@ -290,8 +290,7 @@ static inline void copy_token_value(char **buffer, struct token *token)
 	if (tmp == NULL)
 		abort();
 	*buffer = tmp;
-	memcpy(*buffer, token->value, token->len);
-	tmp[token->len] = '\0';
+	memcpy(*buffer, token->value, (token->len + 1));
 }
 
 /// Tag is made of the following tokens: "BRACKET SYMBOL STRING BRACKET"
@@ -300,12 +299,13 @@ static void tag(struct parser *parser)
 	struct pgn_tag tag = {0};
 
 	expect(parser, TK_LBRACKET);
-	if (expect(parser, TK_SYMBOL)) { 
+
+	if (expect(parser, TK_SYMBOL))
 		copy_token_value(&tag.name, &parser->prev_token);
-	}
-	if (expect(parser, TK_STRING)) {
+
+	if (expect(parser, TK_STRING))
 		copy_token_value(&tag.desc, &parser->prev_token);
-	}
+
 	expect(parser, TK_RBRACKET);
 
 	// TODO: decide on an error handling strategy
@@ -368,8 +368,10 @@ static void ply(struct parser *parser, struct pgn_variation *variation)
 {
 	struct pgn_ply ply = {0};
 
-	if (expect(parser, TK_SYMBOL))
-		memcpy(&ply.text, &parser->prev_token.value, parser->prev_token.len);
+	if (expect(parser, TK_SYMBOL)) {
+		memcpy(&ply.text, &parser->prev_token.value,
+                       parser->prev_token.len);
+	}
 
 	// TODO: as of right now, this actually overrides the previous
 	// nag or comment, I think this is probably correct, but not sure
@@ -383,23 +385,21 @@ static void ply(struct parser *parser, struct pgn_variation *variation)
 		if (accept(parser, TK_NAG)) {
 			expect(parser, TK_NAG);
 			char *str = parser->prev_token.value;
-			// TODO: swap back to storing \0 inside token value
-			str[parser->prev_token.len] = '\0';
 			char *end;
 			ply.nag = strtol(str, &end, 10);
 			// Probably not a number, might be the shorthands
 			if (*end) {
-				if (strncmp(str, "!", 1) == 0)
+				if (strcmp(str, "!") == 0)
 					ply.nag = 1;
-				else if (strncmp(str, "?", 1) == 0)
+				else if (strcmp(str, "?") == 0)
 					ply.nag = 2;
-				else if (strncmp(str, "!!", 2) == 0)
+				else if (strcmp(str, "!!") == 0)
 					ply.nag = 3;
-				else if (strncmp(str, "??", 2) == 0)
+				else if (strcmp(str, "??") == 0)
 					ply.nag = 4;
-				else if (strncmp(str, "!?", 2) == 0)
+				else if (strcmp(str, "!?") == 0)
 					ply.nag = 5;
-				else if (strncmp(str, "?!", 2) == 0)
+				else if (strcmp(str, "?!") == 0)
 					ply.nag = 6;
 				else
 					ply.nag = -1;
@@ -433,7 +433,7 @@ static void ply(struct parser *parser, struct pgn_variation *variation)
 			// already in a list, it does not make sense to insert ...
 			// as that is generally use to indicate a previous position
 			// TODO: decide if should do this in variation branch as well
-			if (strncmp(ply.text, "...", 3) == 0 && vec_len(game->plies) > 0)
+			if (strcmp(ply.text, "...") == 0 && vec_len(game->plies) > 0)
 				return;
 
 			vec_push(game->plies, ply);
@@ -496,11 +496,11 @@ static void pgn_game_block(struct parser *parser)
 	movetext(parser, NULL);
 
 	if (expect(parser, TK_TERMINATION)) {
-		if (strncmp(parser->token.value, "1/2-1/2", 7) == 0)
+		if (strcmp(parser->token.value, "1/2-1/2") == 0)
 			game.termination = DRAW;
-		else if (strncmp(parser->token.value, "1-0", 3) == 0)
+		else if (strcmp(parser->token.value, "1-0") == 0)
 			game.termination = WHITE_WIN;
-		else if (strncmp(parser->token.value, "0-1", 3) == 0)
+		else if (strcmp(parser->token.value, "0-1") == 0)
 			game.termination = BLACK_WIN;
 		else
 			game.termination = UNKNOWN;

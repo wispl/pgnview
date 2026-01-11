@@ -51,8 +51,8 @@ clean:
 
 .Phony: test $(TESTS)
 
-$(TEST_DIR)/%: $(TEST_DIR)/%.c $(PGN_OBJS) $(CHESS_OBJS)
-	$(CC) $< $(CFLAGS) $(LDFLAGS) $(PGN_OBJS) $(CHESS_OBJS) -o $@
+$(TEST_DIR)/%: $(TEST_DIR)/%.c $(CHESS_OBJS) engine.o pgn.o
+	$(CC) $< $(CFLAGS) $(LDFLAGS) $(CHESS_OBJS) engine.o pgn.o -o $@
 
 $(TEST_DIR)/%.test.res: $(TEST_DIR)/%.test
 	./$<
