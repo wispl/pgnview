@@ -150,4 +150,7 @@ struct pgn {
 enum pgn_result pgn_read(struct pgn *pgn, char *filename);
 void pgn_free(struct pgn *pgn);
 
+// Prints the png out in export format
+void pgn_print_game(struct pgn_game *game);
+
 #endif

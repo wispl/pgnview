@@ -569,3 +569,55 @@ void pgn_free(struct pgn *pgn)
 	}
 	vec_free(pgn->games);
 }
+
+// Forward declaration
+static void print_plies(struct pgn_ply *plies);
+
+static void print_variations(struct pgn_variation *variations)
+{
+	for (int i = 0; i < vec_len(variations); ++i) {
+		printf("( ");
+		print_plies(variations[i].plies);
+		printf(" ) ");
+	}
+}
+
+static void print_tags(struct pgn_tag *tags)
+{
+	for (int i = 0; i < vec_len(tags); ++i)
+		printf("[%s \"%s\"]\n", tags[i].name, tags[i].desc);
+}
+
+static void print_plies(struct pgn_ply *plies)
+{
+	for (int i = 0; i < vec_len(plies); ++i) {
+		if (i % 2 == 0)
+			printf("%d. ", (i / 2) + 1);
+
+		printf("%s ", plies[i].text);
+
+		if (plies[i].nag > 0)
+			printf("$%d ", plies[i].nag);
+
+		if (plies[i].comment != NULL)
+			printf("{%s} ", plies[i].comment);
+
+		if (plies[i].variations != NULL)
+			print_variations(plies[i].variations);
+	}
+}
+
+void pgn_print_game(struct pgn_game *game)
+{
+	print_tags(game->tags);
+	printf("\n");
+	print_plies(game->plies);
+	switch (game->termination) {
+	case DRAW:      printf("1/2-1/2\n"); break;
+	case WHITE_WIN: printf("1-0\n");     break;
+	case BLACK_WIN: printf("0-1\n");     break;
+	case UNKNOWN:   printf("*\n");       break;
+	}
+	printf("\n");
+}
+
