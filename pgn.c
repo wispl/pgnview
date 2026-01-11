@@ -199,11 +199,9 @@ static void nag_shorthand(struct parser *parser)
 }
 
 // This just allows me to use fake ranges for the switch statement
-static char transform_char(char c) {
-	if (isalnum(c))
-		return 'a';
-	else
-		return c;
+static inline char transform_char(char c)
+{
+	return (isalnum(c)) ? 'a' : c;
 }
 
 static void next_token(struct parser *parser)
