@@ -1,7 +1,5 @@
-#include "pgn_ext.h"
-
-#include "pgn.h"
 #include "chess.h"
+#include "pgn.h"
 
 #include <assert.h>
 #include <stdbool.h>

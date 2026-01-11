@@ -1,6 +1,5 @@
 #include "chess.h"
 #include "pgn.h"
-#include "pgn_ext.h"
 
 #include "termbox2.h"
 

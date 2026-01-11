@@ -9,8 +9,7 @@ pgnview test: LDFLAGS += -fsanitize=address,undefined -g3
 release: LDFLAGS += -g
 
 CHESS_OBJS = bitboard.o board.o movegen.o
-PGN_OBJS = pgn.o pgn_ext.o
-OBJS = $(CHESS_OBJS) $(PGN_OBJS) termbox2.o main.o
+OBJS = $(CHESS_OBJS) pgn.o engine.o termbox2.o main.o
 EXE = pgnview
 
 RELEASE_DIR = release
@@ -29,11 +28,11 @@ all: pgnview
 pgnview: $(OBJS)
 	$(CC) -o $(EXE) $(OBJS) $(LDFLAGS)
 
-main.o: termbox2.h chess.h pgn.h pgn_ext.h
-$(CHESS_OBJS): chess.h
-$(PGN_OBJS): pgn.h
-pgn_ext.o: pgn_ext.h chess.h
+main.o: termbox2.h chess.h pgn.h
+engine.o: chess.h pgn.h
 termbox2.o: termbox2.h
+pgn.o: pgn.h
+$(CHESS_OBJS): chess.h
 
 release: mkdir $(RELEASE_EXE)
 

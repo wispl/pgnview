@@ -385,6 +385,8 @@ static void ply(struct parser *parser, struct pgn_variation *variation)
 		if (accept(parser, TK_NAG)) {
 			expect(parser, TK_NAG);
 			char *str = parser->prev_token.value;
+			// TODO: swap back to storing \0 inside token value
+			str[parser->prev_token.len] = '\0';
 			char *end;
 			ply.nag = strtol(str, &end, 10);
 			// Probably not a number, might be the shorthands

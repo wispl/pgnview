@@ -281,4 +281,10 @@ void init_lineattacks_table();
 move* generate_moves(struct board *board, move *moves, struct movegenc *conf);
 move* generate_legal_moves(struct board *board, move *moves, enum color color);
 
+// Module engine.c
+
+struct pgn_game; // forward declaration
+
+int pgn_to_moves(const struct pgn_game *game, move *moves);
+
 #endif // CHESS_H
