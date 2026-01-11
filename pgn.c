@@ -117,8 +117,9 @@ static void terminal(struct parser *parser, char c, enum token_type type)
 
 // Collapses periods or treat the period as ellipses depending on the number
 // of periods, see `void move_indicator()` for more information on this
-static void period(struct parser *parser)
+static void period(struct parser *parser, char c)
 {
+	add_to_token(parser, c);
 	while (peek(parser) == '.')
 		add_to_token(parser, advance(parser));
 
@@ -137,14 +138,12 @@ static void string(struct parser *parser)
 		add_to_token(parser, c);
 }
 
-static void symbol(struct parser *parser)
+static void symbol(struct parser *parser, char c)
 {
-	// Assume all digits
-	bool integer = true;
-	// We added a char earlier, it could be a letter
-	// which would would mean our assumption above is false
-	if (isdigit(parser->token.value[0]) == 0)
-		integer = false;
+	add_to_token(parser, c);
+	// Check first character and assume all digits  
+	// if it is a digit
+	bool integer = (isdigit(c) == 0) ? false : true;
 
 	while (is_symbol(peek(parser))) {
 		char c = advance(parser);
@@ -192,8 +191,9 @@ static void brace_comment(struct parser *parser)
 		add_to_token(parser, c);
 }
 
-static void nag_shorthand(struct parser *parser)
+static void nag_shorthand(struct parser *parser, char c)
 {
+	add_to_token(parser, c);
 	parser->token.type = TK_NAG;
 	if (peek(parser) == '!' || peek(parser) == '?')
 		add_to_token(parser, advance(parser));
@@ -230,28 +230,22 @@ static void next_token(struct parser *parser)
 		case EOF: terminal(parser, c, TK_EOF);         goto done;
 		// NAG shorthands
 		case '!': // fallthrough
-		case '?':
-			add_to_token(parser, c);
-			nag_shorthand(parser);
-			goto done;
-		// Complex tokens
-		case '"': return string(parser);        goto done;
-		case '$': return nag(parser);           goto done;
-		case ';': return line_comment(parser);  goto done;
-		case '{': return brace_comment(parser); goto done;
-		case '.':
-			add_to_token(parser, c);
-			period(parser);
-			goto done;
-		case 'a':
-			add_to_token(parser, c);
-			symbol(parser);
-			goto done;
+		case '?': nag_shorthand(parser, c); goto done;
+		// Complex tokens (multiple characters)
+		case '"': string(parser);        goto done;
+		case '$': nag(parser);           goto done;
+		case ';': line_comment(parser);  goto done;
+		case '{': brace_comment(parser); goto done;
+		case '.': period(parser, c);     goto done;
+		case 'a': symbol(parser, c);     goto done;
 		// Ignore whitespace
 		case '\t': // fallthrough
 		case '\r': // fallthrough
 		case ' ': break;
-		case '\n': ++parser->y; parser->x = 0; break;
+		case '\n':
+			++parser->y;
+			parser->x = 0;
+			break;
 		default: terminal(parser, c, TK_UNKNOWN); goto done;
 		}
 	}
